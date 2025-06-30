@@ -13,6 +13,8 @@ import Footer from './components/Footer'
 import { Toaster } from "sonner";
 import CompanyDashboard from './pages/CompanyDashboard'
 import ProtectedRoute from './components/ProtectedRoute'
+import UserManagementPage from './pages/UserManagement';
+import EditProfileForm from './components/UserProfile/EditProfileForm'; // importa tu formulario
 
 function App() {
 
@@ -78,6 +80,27 @@ function App() {
             </ProtectedRoute>
           } 
         />
+
+        <Route 
+        path="/admin/usuarios" 
+        element={
+          <ProtectedRoute allowedRoles={['GRADCONNECT']}>
+            <UserManagementPage />
+          </ProtectedRoute>
+        } 
+      />
+
+
+      <Route 
+        path="/user-profile/edit" 
+        element={
+          <ProtectedRoute allowedRoles={['CANDIDATE', 'RECRUITER', 'GRADCONNECT']}>
+            <EditProfileForm />
+          </ProtectedRoute>
+        }
+      />
+
+
       </Routes>
       <Footer />
       <Toaster />
