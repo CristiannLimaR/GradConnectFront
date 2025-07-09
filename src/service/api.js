@@ -9,6 +9,7 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     const token = useAuthStore.getState().getToken();
+
     if (token) config.headers["x-token"] = token;
     return config;
   },
@@ -92,5 +93,42 @@ export const adminDeleteUser = async (id) => {
     return await apiClient.delete(`/user/${id}`);
   } catch (e) {
     return { error: true, e };
+  }
+};
+
+export const saveExperience = async (data) => {
+  try {
+    const response = await apiClient.post("/experience/save/", data);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, e };
+  }
+};
+
+
+export const getExperience = async () => {
+  try {
+    const response = await apiClient.get("/experience");
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, e };
+  }
+};
+
+export const updateExperience = async (experienceId, data) => {
+  try {
+    const response = await apiClient.put(`/experience/update/${experienceId}`, data);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, e };
+  }
+};
+
+export const deleteExperience = async (experienceId) => {
+  try {
+    const response = await apiClient.delete(`/experience/delete/${experienceId}`);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, e };
   }
 };
