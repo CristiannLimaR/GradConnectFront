@@ -20,13 +20,12 @@ apiClient.interceptors.request.use(
   }
 );
 
-
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       useAuthStore.getState().logout();
-      window.location.href = '/login';
+      window.location.href = "/login";
     }
     return Promise.reject(error);
   }
@@ -56,20 +55,62 @@ export const login = async (data) => {
   }
 };
 
-
-
 export const register = async (data) => {
   try {
     return await apiClient.post("/auth/register", data, {
       headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+        "Content-Type": "multipart/form-data",
+      },
     });
-    
   } catch (e) {
     return {
       error: true,
       e,
     };
+  }
+};
+
+export const saveSkills = async (data) => {
+  try {
+    const response = await apiClient.post("/skills", data);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+export const getSkills = async (userId) => {
+  try {
+    const response = await apiClient.get(`/skills/user/${userId}`);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+export const getSkillById = async (skillId) => {
+  try {
+    const response = await apiClient.get(`/skills/${skillId}`);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+export const deleteSkill = async (skillId) => {
+  try {
+    const response = await apiClient.delete(`/skills/${skillId}`);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+export const updateSkill = async (skillId, data) => {
+  try {
+    const response = await apiClient.put(`/skills/${skillId}`, data);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
   }
 };
