@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import useAuthStore from '../shared/stores/authStore';
 import ProfileHeader from '../components/UserProfile/ProfileHeader';
 import ProfileProgressBar from '../components/UserProfile/ProfileProgressBar';
@@ -5,12 +6,29 @@ import ExperienceSection from '../components/UserProfile/ExperienceSection';
 import EducationSection from '../components/UserProfile/EducationSection';
 import SkillsSection from '../components/UserProfile/SkillsSection';
 import ProfileSummary from '../components/UserProfile/ProfileSummary';
+import { saveSkills, getSkills, deleteSkill } from '../service/api';
 
 export default function UserProfile() {
-  // Obtener el usuario registrado desde el store
-  const { user } = useAuthStore();
+  const user = useAuthStore((state) => state.user);
+  const setAuthUser = useAuthStore((state) => state.updateUser);
 
-  // Adaptar los datos del usuario a los props esperados
+  const [nivelInput, setNivelInput] = useState("BEGINNER");
+  const [editHabilidades, setEditHabilidades] = useState(false);
+  const [habilidadInput, setHabilidadInput] = useState("");
+
+  useEffect(() => {
+    const fetchSkills = async () => {
+      if (user?._id) {
+        const res = await getSkills(user._id);
+        if (res.success) {
+          setAuthUser({ ...user, habilidades: res.data });
+        }
+      }
+    };
+    fetchSkills();
+    // eslint-disable-next-line
+  }, [user?._id]);
+
   const profile = user ? {
     nombre: user.firstName,
     apellido: user.lastName,
@@ -23,6 +41,35 @@ export default function UserProfile() {
     linkedin: user.linkedin,
     descripcion: user.description
   } : {};
+
+  const addHabilidad = async (e) => {
+    e.preventDefault();
+    if (!habilidadInput.trim()) return;
+    const res = await saveSkills({
+      nameSkill: habilidadInput,
+      levelSkill: nivelInput, // <-- Nuevo campo
+      userId: user._id,
+    });
+    if (res.success) {
+      setAuthUser({
+        ...user,
+        habilidades: [...(user.habilidades || []), res.data],
+      });
+      setHabilidadInput("");
+      setNivelInput("BEGINNER");
+    }
+  };
+
+  const deleteHabilidad = async (idx) => {
+    const skillId = user.habilidades[idx]._id;
+    const res = await deleteSkill(skillId);
+    if (res.success) {
+      setAuthUser({
+        ...user,
+        habilidades: user.habilidades.filter((_, i) => i !== idx),
+      });
+    }
+  };
 
   // Si tienes experiencia, educación y habilidades en el usuario, pásalas aquí
   const experiencia = user?.experiencia || [];
@@ -79,15 +126,17 @@ export default function UserProfile() {
             deleteEducacion={() => {}}
             handleEduChange={() => {}}
           />
-          <SkillsSection
-            habilidades={habilidades}
-            editHabilidades={false}
-            setEditHabilidades={() => {}}
-            habilidadInput={''}
-            setHabilidadInput={() => {}}
-            addHabilidad={() => {}}
-            deleteHabilidad={() => {}}
-          />
+        <SkillsSection
+          habilidades={habilidades}
+          editHabilidades={editHabilidades}
+          setEditHabilidades={setEditHabilidades}
+          habilidadInput={habilidadInput}
+          setHabilidadInput={setHabilidadInput}
+          nivelInput={nivelInput}
+          setNivelInput={setNivelInput}
+          addHabilidad={addHabilidad}
+          deleteHabilidad={deleteHabilidad}
+        />
         </div>
       </div>
     </div>
