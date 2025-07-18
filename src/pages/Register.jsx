@@ -25,7 +25,7 @@ export default function Register() {
 
   const handleProfilePhotoChange = (e) => {
     const file = e.target.files[0];
-    setValue("profileImage", file);
+    setValue("profilePhoto", file);
     if (file) {
       setProfilePhotoPreview(URL.createObjectURL(file));
     } else {
@@ -34,10 +34,6 @@ export default function Register() {
   };
 
   const onSubmit = (data) => {
-    if (!data.firstName || !data.lastName || !data.email || !data.password || !data.userLocation || !data.phone) {
-      setError("Por favor, completa todos los campos obligatorios del usuario.");
-      return;
-    }
     setError("");
     // Si hay foto de perfil, usar FormData
     let formData;

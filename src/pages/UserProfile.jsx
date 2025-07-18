@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import useAuthStore from '../shared/stores/authStore';
 import ProfileHeader from '../components/UserProfile/ProfileHeader';
 import ProfileProgressBar from '../components/UserProfile/ProfileProgressBar';
@@ -24,10 +25,78 @@ export default function UserProfile() {
     descripcion: user.description
   } : {};
 
-  // Si tienes experiencia, educación y habilidades en el usuario, pásalas aquí
-  const experiencia = user?.experiencia || [];
-  const educacion = user?.educacion || [];
-  const habilidades = user?.habilidades || [];
+  // Estados para experiencia
+  const [editExpIdx, setEditExpIdx] = useState(null);
+  const [expForm, setExpForm] = useState({ puesto: '', empresa: '', desde: '', hasta: '', descripcion: '' });
+  const [experiencia, setExperiencia] = useState(user?.experiencia || []);
+
+  // Estados para educación
+  const [editEduIdx, setEditEduIdx] = useState(null);
+  const [eduForm, setEduForm] = useState({ titulo: '', institucion: '', desde: '', hasta: '', descripcion: '' });
+  const [educacion, setEducacion] = useState(user?.educacion || []);
+
+  // Estados para habilidades
+  const [editHabilidades, setEditHabilidades] = useState(false);
+  const [habilidadInput, setHabilidadInput] = useState('');
+  const [habilidades, setHabilidades] = useState(user?.habilidades || []);
+
+  // Handlers para experiencia
+  const handleExpChange = (e) => {
+    setExpForm({ ...expForm, [e.target.name]: e.target.value });
+  };
+
+  const addExperiencia = (e) => {
+    e.preventDefault();
+    if (editExpIdx === 'new') {
+      setExperiencia([...experiencia, expForm]);
+    } else if (typeof editExpIdx === 'number') {
+      const updated = [...experiencia];
+      updated[editExpIdx] = expForm;
+      setExperiencia(updated);
+    }
+    setEditExpIdx(null);
+    setExpForm({ puesto: '', empresa: '', desde: '', hasta: '', descripcion: '' });
+  };
+
+  const deleteExperiencia = (idx) => {
+    setExperiencia(experiencia.filter((_, i) => i !== idx));
+  };
+
+  // Handlers para educación
+  const handleEduChange = (e) => {
+    setEduForm({ ...eduForm, [e.target.name]: e.target.value });
+  };
+
+  const addEducacion = (e) => {
+    e.preventDefault();
+    if (editEduIdx === 'new') {
+      setEducacion([...educacion, eduForm]);
+    } else if (typeof editEduIdx === 'number') {
+      const updated = [...educacion];
+      updated[editEduIdx] = eduForm;
+      setEducacion(updated);
+    }
+    setEditEduIdx(null);
+    setEduForm({ titulo: '', institucion: '', desde: '', hasta: '', descripcion: '' });
+  };
+
+  const deleteEducacion = (idx) => {
+    setEducacion(educacion.filter((_, i) => i !== idx));
+  };
+
+  // Handlers para habilidades
+  const addHabilidad = (e) => {
+    e.preventDefault();
+    if (habilidadInput.trim() && !habilidades.includes(habilidadInput.trim())) {
+      setHabilidades([...habilidades, habilidadInput.trim()]);
+      setHabilidadInput('');
+    }
+  };
+
+  const deleteHabilidad = (idx) => {
+    setHabilidades(habilidades.filter((_, i) => i !== idx));
+  };
+
   const porcentaje = 0; // Puedes calcularlo si lo necesitas
   const showCVDialog = false;
 
@@ -61,32 +130,32 @@ export default function UserProfile() {
         <div className="w-full lg:w-1/2 flex flex-col gap-8">
           <ExperienceSection
             experiencia={experiencia}
-            expForm={{}}
-            editExpIdx={null}
-            setEditExpIdx={() => {}}
-            setExpForm={() => {}}
-            addExperiencia={() => {}}
-            deleteExperiencia={() => {}}
-            handleExpChange={() => {}}
+            expForm={expForm}
+            editExpIdx={editExpIdx}
+            setEditExpIdx={setEditExpIdx}
+            setExpForm={setExpForm}
+            addExperiencia={addExperiencia}
+            deleteExperiencia={deleteExperiencia}
+            handleExpChange={handleExpChange}
           />
           <EducationSection
             educacion={educacion}
-            eduForm={{}}
-            editEduIdx={null}
-            setEditEduIdx={() => {}}
-            setEduForm={() => {}}
-            addEducacion={() => {}}
-            deleteEducacion={() => {}}
-            handleEduChange={() => {}}
+            eduForm={eduForm}
+            editEduIdx={editEduIdx}
+            setEditEduIdx={setEditEduIdx}
+            setEduForm={setEduForm}
+            addEducacion={addEducacion}
+            deleteEducacion={deleteEducacion}
+            handleEduChange={handleEduChange}
           />
           <SkillsSection
             habilidades={habilidades}
-            editHabilidades={false}
-            setEditHabilidades={() => {}}
-            habilidadInput={''}
-            setHabilidadInput={() => {}}
-            addHabilidad={() => {}}
-            deleteHabilidad={() => {}}
+            editHabilidades={editHabilidades}
+            setEditHabilidades={setEditHabilidades}
+            habilidadInput={habilidadInput}
+            setHabilidadInput={setHabilidadInput}
+            addHabilidad={addHabilidad}
+            deleteHabilidad={deleteHabilidad}
           />
         </div>
       </div>
