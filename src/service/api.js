@@ -2,31 +2,25 @@ import axios from "axios";
 import useAuthStore from "../shared/stores/authStore";
 
 const apiClient = axios.create({
-  baseURL: "http://localhost:3000/gradconnect/v1",
+  baseURL: "http://localhost:3000/gradConnect/v1",
   timeout: 5000,
 });
+
 apiClient.interceptors.request.use(
   (config) => {
     const token = useAuthStore.getState().getToken();
-
-    if (token) {
-      config.headers["x-token"] = token;
-    }
-
+    if (token) config.headers["x-token"] = token;
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
-
 
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       useAuthStore.getState().logout();
-      window.location.href = '/login';
+      window.location.href = "/login";
     }
     return Promise.reject(error);
   }
@@ -34,42 +28,69 @@ apiClient.interceptors.response.use(
 
 export default apiClient;
 
-// Iniciar sesión
 export const login = async (data) => {
   try {
-    const response = await apiClient.post("/auth/login", data);
-    const { token, user } = response.data;
-
+    const res = await apiClient.post("/auth/login", data);
+    const { token, user } = res.data;
     useAuthStore.getState().login(user, token);
-
-    return {
-      data: {
-        token,
-        user,
-      },
-    };
+    return { data: { token, user } };
   } catch (e) {
-    return {
-      error: true,
-      e,
-    };
+    return { error: true, e };
   }
 };
-
-
 
 export const register = async (data) => {
   try {
     return await apiClient.post("/auth/register", data, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+      headers: { "Content-Type": "multipart/form-data" },
     });
-    
   } catch (e) {
-    return {
-      error: true,
-      e,
-    };
+    return { error: true, e };
+  }
+};
+
+export const updateProfile = async (formData) => {
+  const id = useAuthStore.getState().getUser().id;
+  try {
+    const res = await apiClient.put(`/user/${id}`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    return { updatedUser: res.data.user };
+  } catch (e) {
+    return { error: true, e };
+  }
+};
+
+export const changePassword = async (id, passwordData) => {
+  try {
+    const response = await fetch(`/api/users/updatePassword/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(passwordData)
+    });
+    return await response.json();
+  } catch (e) {
+    return { error: true, e };
+  }
+};
+
+export const adminUpdateUser = async (id, data) => {
+  try {
+    return await apiClient.put(`/user/${id}`, data, {
+      headers: data instanceof FormData
+        ? { "Content-Type": "multipart/form-data" }
+        : {},
+    });
+  } catch (e) {
+    return { error: true, e };
+  }
+};
+
+export const adminDeleteUser = async (id) => {
+  try {
+    return await apiClient.delete(`/user/${id}`);
+  } catch (e) {
+    return { error: true, e };
   }
 };

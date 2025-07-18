@@ -34,7 +34,6 @@ export default function Register() {
   };
 
   const onSubmit = (data) => {
-    setError("");
     // Si hay foto de perfil, usar FormData
     let formData;
     if (data.profilePhoto) {
