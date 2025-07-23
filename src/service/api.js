@@ -20,13 +20,12 @@ apiClient.interceptors.request.use(
   }
 );
 
-
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       useAuthStore.getState().logout();
-      window.location.href = '/login';
+      window.location.href = "/login";
     }
     return Promise.reject(error);
   }
@@ -56,16 +55,13 @@ export const login = async (data) => {
   }
 };
 
-
-
 export const register = async (data) => {
   try {
     return await apiClient.post("/auth/register", data, {
       headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+        "Content-Type": "multipart/form-data",
+      },
     });
-    
   } catch (e) {
     return {
       error: true,
@@ -73,3 +69,59 @@ export const register = async (data) => {
     };
   }
 };
+
+// ##### wOffers #####
+export const getWOffers = async (data) => {
+  try {
+    return await apiClient.get(`/wOffer/`, data);
+  } catch (error) {
+    return {
+      error: true,
+      error,
+    };
+  }
+};
+
+export const searchWOffer = async (id) => {
+  try {
+    return await apiClient.get(`/wOffer/search/${id}`)
+  } catch (error) {
+    return {
+      error: true,
+      error,
+    };
+  }
+};
+
+export const saveWOffer = async (formData) => {
+  try {
+    return await apiClient.post(`/wOffer/save`, formData)
+  } catch (error) {
+    return {
+      error: true,
+      error,
+    };
+  }
+}
+
+export const editWOffer = async (id, data) => {
+  try {
+    return await apiClient.put(`/wOffer/update/${id}`,data)
+  } catch (error) {
+    return {
+      error: true,
+      error
+    }
+  }
+}
+
+export const deleteWOffer = async (id) => {
+  try {
+    return await apiClient.delete(`/wOffer/delete/${id}`)
+  } catch (error) {
+    return {
+      error: true,
+      error
+    }
+  }
+}

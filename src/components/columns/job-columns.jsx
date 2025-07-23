@@ -93,7 +93,7 @@ export const jobColumns = [
     header: "Modalidad",
     cell: ({ row }) => {
       const location = row.getValue("location")
-      const locationLabels = {
+      const locationLabels = { // MODIFICAR
         'Remoto': 'Remoto',
         'Presencial': 'Presencial',
         'Hibrido': 'Híbrido'
