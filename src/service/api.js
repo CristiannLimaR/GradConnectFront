@@ -125,3 +125,26 @@ export const deleteWOffer = async (id) => {
     }
   }
 }
+
+export const getOffersByEnterprise = async (enterpriseId) => {
+  try {
+    return await apiClient.get(`/wOffer/search/woffers/enterprise/${enterpriseId}`);
+  } catch (error) {
+    return {
+      error: true,
+      error,
+    };
+  }
+}
+
+// ##### Enterprise #####
+export const getEnterpriseByRecruiter = async (recruiterId) => {
+  try {
+    return await apiClient.get(`/enterprise/recruiter/${recruiterId}`);
+  } catch (error) {
+    return {
+      error: true,
+      error
+    }
+  }
+}

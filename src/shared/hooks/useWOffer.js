@@ -4,7 +4,8 @@ import {
   saveWOffer as saveOfferReq,
   editWOffer as editOfferReq,
   deleteWOffer as deleteOfferReq,
-} from "../service/api";
+  getOffersByEnterprise as getOffersByEnterpriseReq
+} from "../../service/api";
 
 import { useState } from "react";
 import { toast } from "sonner";
@@ -32,7 +33,7 @@ export const useOffer = () => {
 
   // BUSCAR
   const searchOffer = async (id) => {
-    const response = await searchOfferReq();
+    const response = await searchOfferReq(id);
 
     if (response.error) {
       toast.error("Error al obtener wOffers", {
@@ -48,7 +49,7 @@ export const useOffer = () => {
 
   // CREATE
   const saveOffer = async (data) => {
-    const response = await saveOfferReq();
+    const response = await saveOfferReq(data);
 
     if (response.error) {
       toast.error("Error al obtener wOffers", {
@@ -64,7 +65,7 @@ export const useOffer = () => {
 
   // EDIT
   const editOffer = async (id, data) => {
-    const response = await editOfferReq();
+    const response = await editOfferReq(id, data);
 
     if (response.error) {
       toast.error("Error al obtener wOffers", {
@@ -80,7 +81,7 @@ export const useOffer = () => {
 
   // DELETE
   const deleteOffer = async (id) => {
-    const response = await deleteOfferReq();
+    const response = await deleteOfferReq(id);
 
     if (response.error) {
       toast.error("Error al obtener wOffers", {
@@ -94,6 +95,22 @@ export const useOffer = () => {
     return response.data;
   };
 
+  // WOffers por empresa
+  const getOffersByEnterprise = async (enterpriseId) => {
+    const response = await getOffersByEnterpriseReq(enterpriseId)
+
+    if (response.error) {
+      toast.error("Error al obtener wOffers por empresa", {
+        description:
+          response.error?.response?.data || "Error al obtener wOffers por empresa",
+        duration: 2000,
+      });
+      return { error: true };
+    }
+
+    return response.data
+  }
+
   return {
     offers,
     getWOffers,
@@ -101,5 +118,6 @@ export const useOffer = () => {
     saveOffer,
     editOffer,
     deleteOffer,
+    getOffersByEnterprise
   };
 };

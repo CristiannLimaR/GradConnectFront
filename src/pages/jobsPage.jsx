@@ -3,22 +3,22 @@ import HeroSection from "../components/HeroSection";
 import JobList from "../components/JobList";
 import JobDetails from "../components/JobDetails";
 import BottomCTA from "../components/BottomCTA";
-import { useOffer } from "../hooks/useWOffer";
+import { useOffer } from "../shared/hooks/useWOffer";
 
 export default function JobsPage() {
   const [selectedJob, setSelectedJob] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [location, setLocation] = useState("");
-  const { offers, getWOffers } = useOffer()
-  
+  const { offers, getWOffers } = useOffer();
+
   useEffect(() => {
-    getWOffers()
-  }, [] )
+    getWOffers();
+  }, []);
 
   const currentJob = offers[selectedJob];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 relative">
       <HeroSection
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
