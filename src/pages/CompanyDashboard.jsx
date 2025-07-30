@@ -57,7 +57,7 @@ export default function CompanyDashboard() {
     useOffer();
   const { user } = useAuthStore();
   const { getEnterpriseByRecruiter } = useEnterprise();
-
+  
   const [offers, setOffers] = useState([]);
   const [enterprise, setEnterprise] = useState(null);
 
@@ -88,6 +88,7 @@ export default function CompanyDashboard() {
 
   // ############## FAKE DATA ##############
   // Simulación de datos de empresa y ofertas
+
   const empresa = {
     nombre: "Mi Empresa",
     descripcion: "Descripción de la empresa...",
@@ -483,6 +484,23 @@ export default function CompanyDashboard() {
     }
   }, [location.search]);
 
+
+
+
+
+  if (!enterprise) {
+    console.log("Cargando datos de la empresa...");
+    return <div>Cargando datos de la empresa...</div>;
+  }
+
+  const fechaLarga = new Date(enterprise.createdAt).toLocaleDateString(
+    "en-EN",
+    {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    }
+  );
   return (
     <div className="min-h-screen flex bg-gray-50">
       {/* Menú lateral */}
@@ -678,9 +696,9 @@ export default function CompanyDashboard() {
                       <div className="flex justify-between items-start mb-6">
                         <div>
                           <h2 className="text-2xl font-bold mb-2">
-                            {empresa.nombre}
+                            {enterprise.name}
                           </h2>
-                          <p className="text-gray-600">{empresa.descripcion}</p>
+                          <p className="text-gray-600">{enterprise.description}</p>
                         </div>
                         <Button
                           onClick={() => setEditandoPerfil(true)}
@@ -701,7 +719,7 @@ export default function CompanyDashboard() {
                               <p className="text-sm font-medium text-gray-600">
                                 Email
                               </p>
-                              <p className="text-gray-900">{empresa.email}</p>
+                              <p className="text-gray-900">{enterprise.email}</p>
                             </div>
                           </div>
 
@@ -714,7 +732,7 @@ export default function CompanyDashboard() {
                                 Teléfono
                               </p>
                               <p className="text-gray-900">
-                                {empresa.telefono}
+                                {enterprise.contactNumber || "No especificado"}
                               </p>
                             </div>
                           </div>
@@ -728,7 +746,7 @@ export default function CompanyDashboard() {
                                 Ubicación
                               </p>
                               <p className="text-gray-900">
-                                {empresa.ubicacion}
+                                {enterprise.address || "No especificado"}
                               </p>
                             </div>
                           </div>
@@ -771,7 +789,7 @@ export default function CompanyDashboard() {
                               <p className="text-sm font-medium text-gray-600">
                                 Sitio web
                               </p>
-                              <p className="text-gray-900">www.miempresa.com</p>
+                              <p className="text-gray-900">{enterprise. webSite}</p>
                             </div>
                           </div>
                         </div>
@@ -797,14 +815,14 @@ export default function CompanyDashboard() {
                           <Input
                             type="text"
                             placeholder="Nombre de la empresa"
-                            defaultValue={empresa.nombre}
+                            defaultValue={enterprise.name}
                           />
                         </div>
                         <div>
                           <Label>Descripción</Label>
                           <Textarea
                             placeholder="Describe tu empresa..."
-                            defaultValue={empresa.descripcion}
+                            defaultValue={enterprise.description}
                           />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -813,7 +831,7 @@ export default function CompanyDashboard() {
                             <Input
                               type="email"
                               placeholder="Correo de contacto"
-                              defaultValue={empresa.email}
+                              defaultValue={enterprise.email}
                             />
                           </div>
                           <div>
@@ -821,7 +839,7 @@ export default function CompanyDashboard() {
                             <Input
                               type="tel"
                               placeholder="Teléfono"
-                              defaultValue={empresa.telefono}
+                              defaultValue={enterprise.contactNumber}
                             />
                           </div>
                         </div>
@@ -830,7 +848,7 @@ export default function CompanyDashboard() {
                           <Input
                             type="text"
                             placeholder="Ubicación"
-                            defaultValue={empresa.ubicacion}
+                            defaultValue={enterprise.address}
                           />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -876,19 +894,19 @@ export default function CompanyDashboard() {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Fundada</span>
-                      <span className="font-medium">2020</span>
+                      <span className="font-medium">{fechaLarga}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Tamaño</span>
-                      <span className="font-medium">11-50 empleados</span>
+                      <span className="font-medium">{enterprise.size}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Industria</span>
-                      <span className="font-medium">Tecnología</span>
+                      <span className="font-medium">{enterprise.industry}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Tipo</span>
-                      <span className="font-medium">Privada</span>
+                      <span className="font-medium">{enterprise.type}</span>
                     </div>
                   </div>
                 </Card>

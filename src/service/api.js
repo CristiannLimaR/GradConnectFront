@@ -148,3 +148,25 @@ export const getEnterpriseByRecruiter = async (recruiterId) => {
     }
   }
 }
+
+export const getEnterprises = async () => {
+  try {
+    return await apiClient.get(`/enterprise/`);
+  } catch (error) {
+    return {
+      error: true,
+      error
+    }
+  }
+}
+
+export const deleteEnterprise = async (id) => {
+  try {
+    return await apiClient.delete(`/enterprise/${id}`);
+  } catch (error) {
+    return {
+      error: true,
+      error
+    }
+  }
+}

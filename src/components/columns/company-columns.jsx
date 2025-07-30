@@ -9,7 +9,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-export const companyColumns = [
+
+
+export const companyColumns = ({ deleteEnterprise, onViewProfile }) => [
   {
     accessorKey: "name",
     header: ({ column }) => {
@@ -189,7 +191,7 @@ export const companyColumns = [
       return (
         <div className="capitalize">
           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-            status === 'verificada' ? 'bg-green-100 text-green-800' :
+            status === 'Activa' ? 'bg-green-100 text-green-800' :
             status === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
             'bg-red-100 text-red-800'
           }`}>
@@ -221,17 +223,17 @@ export const companyColumns = [
               Copiar ID de empresa
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Ver perfil completo</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onViewProfile(company)}>Ver perfil completo</DropdownMenuItem>
             <DropdownMenuItem>Editar empresa</DropdownMenuItem>
-            <DropdownMenuItem>Ver ofertas publicadas</DropdownMenuItem>
-            <DropdownMenuItem>Contactar administrador</DropdownMenuItem>
-            {company.status !== 'verificada' && (
+            {company.status !== 'Activa' && (
               <DropdownMenuItem className="text-green-600">
                 Verificar empresa
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem className="text-red-600">
-              {company.status === 'suspendida' ? 'Reactivar' : 'Suspender'} empresa
+            <DropdownMenuItem className="text-red-600"
+              onClick={() => deleteEnterprise(company.id)}
+            >
+              {company.status === 'Inactiva' ? 'Reactivar' : 'Suspender'} empresa
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

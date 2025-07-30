@@ -1,4 +1,4 @@
-import { getEnterpriseByRecruiter as getEnterpriseByRecruiterService } from "../../service/api";
+import { getEnterpriseByRecruiter as getEnterpriseByRecruiterService, getEnterprises as getEnterpriseService, deleteEnterprise as deleteEnterpriseService } from "../../service/api";
 
 import { useState } from "react";
 import { toast } from "sonner";
@@ -6,7 +6,6 @@ import { toast } from "sonner";
 export const useEnterprise = () => {
   const [enterprise, setEnterprise] = useState([]);
 
-  // Listar empresa-reclutador
   const getEnterpriseByRecruiter = async (id) => {
     const response = await getEnterpriseByRecruiterService(id);
 
@@ -23,8 +22,54 @@ export const useEnterprise = () => {
     return response.data;
   };
 
+  const getEnterprises = async () => {
+    try {
+      const response = await getEnterpriseService();
+      if (response.error) {
+        toast.error("Error al obtener empresas", {
+          description: response.error?.response?.data || "Error al obtener empresas",
+          duration: 2000,
+        });
+        return { error: true };
+      }
+      setEnterprise(response.data);
+      return response.data;
+    } catch (error) {
+      toast.error("Error al obtener empresas", {
+        description: error?.response?.data || "Error al obtener empresas",
+        duration: 2000,
+      });
+      return { error: true };
+    }
+  };
+
+  const deleteEnterprise = async (id) => {
+    try {
+      const response = await deleteEnterpriseService(id);
+
+      if (response.error) {
+        toast.error("Error al eliminar la empresa", {
+          description: response.error?.response?.data || "Error al eliminar la empresa",
+          duration: 2000,
+        });
+        return { error: true };
+      }
+      toast.success("Empresa eliminada correctamente");
+      await getEnterprises();
+      return response.data;
+    } catch (error) {
+      toast.error("Error al eliminar la empresa", {
+        description: error?.response?.data || "Error al eliminar la empresa",
+        duration: 2000,
+      });
+      return { error: true };
+    }
+  }
+
   return {
     getEnterpriseByRecruiter,
+    getEnterprises,
+    deleteEnterprise,
     enterprise,
   };
 };
