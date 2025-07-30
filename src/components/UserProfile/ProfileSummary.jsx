@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Edit2 } from "lucide-react";
 import EditProfileForm from "./EditProfileForm"; // Ajusta ruta si es necesario
+import { Dialog, DialogTrigger, DialogContent, DialogTitle } from "../ui/dialog";
 
 export default function ProfileSummary({ profile, refreshProfile }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -15,15 +16,25 @@ export default function ProfileSummary({ profile, refreshProfile }) {
 
   return (
     <div className="bg-white border rounded p-6 relative max-w-5xl mx-auto">
-      <button
-        onClick={() => setIsEditing((v) => !v)}
-        className="absolute top-4 right-4 text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm"
-      >
-        <Edit2 className="w-4 h-4" /> {isEditing ? "Cerrar" : "Editar"}
-      </button>
-
+      <Dialog open={isEditing} onOpenChange={setIsEditing}>
+        <DialogTrigger asChild>
+          <button
+            className="absolute top-4 right-4 text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm"
+          >
+            <Edit2 className="w-4 h-4" /> Editar
+          </button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogTitle>Editar perfil</DialogTitle>
+          <EditProfileForm
+            onClose={() => setIsEditing(false)}
+            onSuccess={handleEditSuccess}
+            isInline={false}
+            currentProfile={profile}
+          />
+        </DialogContent>
+      </Dialog>
       <h1 className="text-2xl font-bold mb-4 text-gray-800">Perfil</h1>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <div className="mb-2">
@@ -93,20 +104,7 @@ export default function ProfileSummary({ profile, refreshProfile }) {
             )}
           </div>
         </div>
-
-        {/* Formulario inline solo si está editando */}
-        {isEditing && (
-          <div className="border-l pl-6">
-            <EditProfileForm
-              onClose={() => setIsEditing(false)}
-              onSuccess={handleEditSuccess}
-              isInline
-              currentProfile={profile} // Pasa datos actuales para editar
-            />
-          </div>
-        )}
       </div>
-
       {showCVDialog && profile.cv && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg shadow-lg p-4 max-w-2xl w-full relative">

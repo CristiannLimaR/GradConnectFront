@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import useAuthStore from "../../shared/stores/authStore";
 import { useProfile } from "../../shared/hooks/useProfile";
+import { Input } from "../ui/input";
+import { Textarea } from "../ui/textarea";
+import { Button } from "../ui/button";
+import { Label } from "../ui/label";
 
 export default function EditProfileForm({ onClose, onSuccess, isInline = false }) {
   const user = useAuthStore((state) => state.user);
@@ -133,116 +137,70 @@ export default function EditProfileForm({ onClose, onSuccess, isInline = false }
 
         <form onSubmit={handleSubmit} className="space-y-6" noValidate>
           {/* Datos generales */}
-          <fieldset className="border border-gray-300 rounded p-4">
-            <legend className="font-semibold mb-2">Datos generales</legend>
+          <fieldset className="border border-gray-200 rounded-lg p-4 bg-card/50">
+            <legend className="font-semibold mb-2 text-primary">Datos generales</legend>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input
-                name="nombre"
-                placeholder="Nombre"
-                className="border p-2 rounded w-full"
-                value={form.nombre}
-                onChange={handleChange}
-                required
-              />
-              <input
-                name="apellido"
-                placeholder="Apellido"
-                className="border p-2 rounded w-full"
-                value={form.apellido}
-                onChange={handleChange}
-                required
-              />
-              <input
-                name="email"
-                type="email"
-                placeholder="Correo"
-                className="border p-2 rounded w-full"
-                value={form.email}
-                onChange={handleChange}
-                required
-              />
-              <input
-                name="telefono"
-                placeholder="Teléfono"
-                className="border p-2 rounded w-full"
-                value={form.telefono}
-                onChange={handleChange}
-              />
-              <input
-                name="ubicacion"
-                placeholder="Ubicación"
-                className="border p-2 rounded w-full"
-                value={form.ubicacion}
-                onChange={handleChange}
-              />
-              <input
-                name="linkedin"
-                placeholder="LinkedIn"
-                className="border p-2 rounded w-full"
-                value={form.linkedin}
-                onChange={handleChange}
-              />
-              <input
-                name="github"
-                placeholder="GitHub"
-                className="border p-2 rounded w-full"
-                value={form.github}
-                onChange={handleChange}
-              />
+              <div>
+                <Label htmlFor="nombre">Nombre</Label>
+                <Input id="nombre" name="nombre" placeholder="Nombre" value={form.nombre} onChange={handleChange} required autoComplete="off" />
+              </div>
+              <div>
+                <Label htmlFor="apellido">Apellido</Label>
+                <Input id="apellido" name="apellido" placeholder="Apellido" value={form.apellido} onChange={handleChange} required autoComplete="off" />
+              </div>
+              <div>
+                <Label htmlFor="email">Correo</Label>
+                <Input id="email" name="email" type="email" placeholder="Correo" value={form.email} onChange={handleChange} required autoComplete="off" />
+              </div>
+              <div>
+                <Label htmlFor="telefono">Teléfono</Label>
+                <Input id="telefono" name="telefono" placeholder="Teléfono" value={form.telefono} onChange={handleChange} autoComplete="off" />
+              </div>
+              <div>
+                <Label htmlFor="ubicacion">Ubicación</Label>
+                <Input id="ubicacion" name="ubicacion" placeholder="Ubicación" value={form.ubicacion} onChange={handleChange} autoComplete="off" />
+              </div>
+              <div>
+                <Label htmlFor="linkedin">LinkedIn</Label>
+                <Input id="linkedin" name="linkedin" placeholder="LinkedIn" value={form.linkedin} onChange={handleChange} autoComplete="off" />
+              </div>
+              <div>
+                <Label htmlFor="github">GitHub</Label>
+                <Input id="github" name="github" placeholder="GitHub" value={form.github} onChange={handleChange} autoComplete="off" />
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="descripcion">Descripción</Label>
+                <Textarea id="descripcion" name="descripcion" placeholder="Descripción" value={form.descripcion} onChange={handleChange} rows={3} />
+              </div>
             </div>
           </fieldset>
-
           {/* CV */}
-          <fieldset className="border border-gray-300 rounded p-4">
-            <legend className="font-semibold mb-2">CV</legend>
-            <input
-              type="file"
-              name="cv"
-              accept=".pdf,.doc,.docx"
-              onChange={handleChange}
-              disabled={isSaving}
-            />
+          <fieldset className="border border-gray-200 rounded-lg p-4 bg-card/50">
+            <legend className="font-semibold mb-2 text-primary">CV</legend>
+            <Label htmlFor="cv">Adjuntar CV</Label>
+            <Input id="cv" type="file" name="cv" accept=".pdf,.doc,.docx" onChange={handleChange} disabled={isSaving} />
           </fieldset>
-
           {/* Cambiar contraseña */}
-          <fieldset className="border border-gray-300 rounded p-4">
-            <legend className="font-semibold mb-2">Cambiar contraseña</legend>
-            <input
-              type="password"
-              name="passwordConfirm"
-              placeholder="Contraseña actual"
-              className="border p-2 rounded w-full mb-2"
-              value={form.passwordConfirm}
-              onChange={handleChange}
-              disabled={isSaving}
-            />
-            <input
-              type="password"
-              name="newPassword"
-              placeholder="Nueva contraseña"
-              className="border p-2 rounded w-full mb-2"
-              value={form.newPassword}
-              onChange={handleChange}
-              disabled={isSaving}
-            />
-            <input
-              type="password"
-              name="newPasswordConfirm"
-              placeholder="Confirmar nueva contraseña"
-              className="border p-2 rounded w-full"
-              value={form.newPasswordConfirm}
-              onChange={handleChange}
-              disabled={isSaving}
-            />
+          <fieldset className="border border-gray-200 rounded-lg p-4 bg-card/50">
+            <legend className="font-semibold mb-2 text-primary">Cambiar contraseña</legend>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="passwordConfirm">Contraseña actual</Label>
+                <Input id="passwordConfirm" type="password" name="passwordConfirm" placeholder="Contraseña actual" value={form.passwordConfirm} onChange={handleChange} disabled={isSaving} autoComplete="off" />
+              </div>
+              <div>
+                <Label htmlFor="newPassword">Nueva contraseña</Label>
+                <Input id="newPassword" type="password" name="newPassword" placeholder="Nueva contraseña" value={form.newPassword} onChange={handleChange} disabled={isSaving} autoComplete="off" />
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="newPasswordConfirm">Confirmar nueva contraseña</Label>
+                <Input id="newPasswordConfirm" type="password" name="newPasswordConfirm" placeholder="Confirmar nueva contraseña" value={form.newPasswordConfirm} onChange={handleChange} disabled={isSaving} autoComplete="off" />
+              </div>
+            </div>
           </fieldset>
-
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-            disabled={isSaving}
-          >
+          <Button type="submit" className="w-full" disabled={isSaving}>
             Guardar cambios
-          </button>
+          </Button>
         </form>
       </div>
     </div>

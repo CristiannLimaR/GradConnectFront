@@ -132,3 +132,48 @@ export const deleteExperience = async (experienceId) => {
     return { success: false, e };
   }
 };
+
+export const saveSkills = async (data) => {
+  try {
+    const response = await apiClient.post("/skills", data);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+export const getSkills = async (userId) => {
+  try {
+    const response = await apiClient.get(`/skills/user/${userId}`);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+export const getSkillById = async (skillId) => {
+  try {
+    const response = await apiClient.get(`/skills/${skillId}`);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+export const deleteSkill = async (skillId) => {
+  try {
+    const response = await apiClient.delete(`/skills/${skillId}`);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+export const updateSkill = async (skillId, data) => {
+  try {
+    const response = await apiClient.put(`/skills/${skillId}`, data);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};

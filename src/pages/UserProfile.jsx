@@ -6,11 +6,27 @@ import ExperienceSection from "../components/UserProfile/ExperienceSection";
 import EducationSection from "../components/UserProfile/EducationSection";
 import SkillsSection from "../components/UserProfile/SkillsSection";
 import ProfileSummary from "../components/UserProfile/ProfileSummary";
-import { saveExperience, updateExperience, getExperience, deleteExperience } from "../service/api";
+import { useSkills } from "../shared/hooks/useSkills";
+import { useExperience } from "../shared/hooks/useExperience";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Separator } from "../components/ui/separator";
+import { BadgeCheck, GraduationCap, Briefcase, Star, UserCog } from "lucide-react";
 
 export default function UserProfile() {
   const user = useAuthStore((state) => state.user);
   const setAuthUser = useAuthStore((state) => state.updateUser);
+
+  // Hooks personalizados
+  const { loading: skillsLoading, fetchSkills, addSkill, removeSkill } = useSkills();
+  const { 
+    loading: experienceLoading, 
+    experiences, 
+    fetchExperiences, 
+    addExperience, 
+    updateExperienceById, 
+    removeExperience 
+  } = useExperience();
 
   const [showCVDialog, setShowCVDialog] = useState(false);
   const [profile, setProfile] = useState({});
@@ -24,7 +40,6 @@ export default function UserProfile() {
     _id: null,
   });
   const [editExpIdx, setEditExpIdx] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   // Estados locales para educación
@@ -36,9 +51,7 @@ export default function UserProfile() {
   const [editHabilidades, setEditHabilidades] = useState(false);
   const [habilidadInput, setHabilidadInput] = useState("");
   const [habilidades, setHabilidades] = useState([]);
-
-  // Estados para experiencia
-  const [experiencia, setExperiencia] = useState([]);
+  const [nivelInput, setNivelInput] = useState("BEGINNER");
 
   useEffect(() => {
     if (user) {
@@ -54,31 +67,31 @@ export default function UserProfile() {
         linkedin: user.linkedinUrl || user.linkedin,
         descripcion: user.summary || user.description,
       });
-      setExperiencia(user.experiencia || []);
       setEducacion(user.educacion || []);
       setHabilidades(user.habilidades || []);
     }
   }, [user]);
 
   useEffect(() => {
-    const fetchExperiences = async () => {
+    const loadExperiences = async () => {
       if (!user) return;
-      try {
-        const response = await getExperience();
-        if (response.success) {
-          const updatedUser = {
-            ...user,
-            experiencia: response.data.experiences,
-          };
-          refreshProfile(updatedUser);
-        }
-      } catch (error) {
-        setError("Error al cargar experiencias.");
-      }
+      await fetchExperiences();
     };
 
-    fetchExperiences();
-  }, []);
+    loadExperiences();
+  }, [user]);
+
+  useEffect(() => {
+    const loadSkills = async () => {
+      if (user?._id) {
+        const skills = await fetchSkills(user._id);
+        if (skills) {
+          setAuthUser({ ...user, habilidades: skills });
+        }
+      }
+    };
+    loadSkills();
+  }, [user?._id]);
 
   const porcentaje = 0;
 
@@ -108,136 +121,199 @@ export default function UserProfile() {
 
   const addExperiencia = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
 
-    try {
-      const dataToSend = {
-        title: expForm.puesto,
-        company: expForm.empresa,
-        startDate: expForm.desde,
-        endDate: expForm.isCurrent ? null : expForm.hasta,
-        description: expForm.descripcion,
-        isCurrent: expForm.isCurrent,
+    const dataToSend = {
+      title: expForm.puesto,
+      company: expForm.empresa,
+      startDate: expForm.desde,
+      endDate: expForm.isCurrent ? null : expForm.hasta,
+      description: expForm.descripcion,
+      isCurrent: expForm.isCurrent,
+    };
+
+    let result;
+    if (editExpIdx !== null && editExpIdx !== "new") {
+      const experienceId = expForm._id;
+      if (!experienceId) {
+        setError("ID de experiencia no encontrado.");
+        return;
+      }
+      result = await updateExperienceById(experienceId, dataToSend);
+    } else {
+      result = await addExperience(dataToSend);
+    }
+
+    if (result) {
+      // Actualizar el usuario con las experiencias del estado local del hook
+      const updatedUser = {
+        ...user,
+        experiencia: experiences,
       };
-
-      let result;
-      if (editExpIdx !== null && editExpIdx !== "new") {
-        const experienceId = expForm._id;
-        if (!experienceId) throw new Error("ID de experiencia no encontrado.");
-        result = await updateExperience(experienceId, dataToSend);
-      } else {
-        result = await saveExperience(dataToSend);
-      }
-
-      if (result.success) {
-        const updatedProfileResponse = await getExperience();
-        if (updatedProfileResponse.success) {
-          const updatedUser = {
-            ...user,
-            experiencia: updatedProfileResponse.data.experiences,
-          };
-          refreshProfile(updatedUser);
-        }
-        setEditExpIdx(null);
-        setExpForm({
-          puesto: "",
-          empresa: "",
-          desde: "",
-          hasta: "",
-          descripcion: "",
-          isCurrent: false,
-          _id: null,
-        });
-      } else {
-        const msg = result.e?.response?.data?.msg || result.e?.message;
-        setError(`Error al guardar experiencia: ${msg}`);
-      }
-    } catch (err) {
-      setError(`Error inesperado: ${err.message || err.toString()}`);
-    } finally {
-      setLoading(false);
+      refreshProfile(updatedUser);
+      
+      setEditExpIdx(null);
+      setExpForm({
+        puesto: "",
+        empresa: "",
+        desde: "",
+        hasta: "",
+        descripcion: "",
+        isCurrent: false,
+        _id: null,
+      });
     }
   };
 
   const deleteExperiencia = async (experienceId) => {
-    setLoading(true);
     setError(null);
-    try {
-      const result = await deleteExperience(experienceId);
-      if (result.success) {
-        const updatedProfileResponse = await getExperience();
-        if (updatedProfileResponse.success) {
-          const updatedUser = {
-            ...user,
-            experiencia: updatedProfileResponse.data.experiences || [],
-          };
-          refreshProfile(updatedUser);
-        }
-      } else {
-        const msg = result.e?.response?.data?.msg || result.e?.message;
-        setError(`Error al eliminar experiencia: ${msg}`);
-      }
-    } catch (err) {
-      setError(`Error inesperado al eliminar: ${err.message || err.toString()}`);
-    } finally {
-      setLoading(false);
+    const success = await removeExperience(experienceId);
+    if (success) {
+      // Actualizar el usuario con las experiencias del estado local del hook
+      const updatedUser = {
+        ...user,
+        experiencia: experiences,
+      };
+      refreshProfile(updatedUser);
     }
   };
 
-  // Funciones placeholder para educación y habilidades (necesarias para los componentes)
+  // Funciones para educación
   const addEducacion = () => {};
   const deleteEducacion = () => {};
   const handleEduChange = () => {};
-  const addHabilidad = () => {};
-  const deleteHabilidad = () => {};
+
+  // Funciones para habilidades
+  const addHabilidad = async (e) => {
+    e.preventDefault();
+    if (!habilidadInput.trim()) return;
+    
+    const skillData = {
+      nameSkill: habilidadInput,
+      levelSkill: nivelInput,
+      userId: user._id,
+    };
+    
+    const result = await addSkill(skillData);
+    if (result) {
+      setAuthUser({
+        ...user,
+        habilidades: [...(user.habilidades || []), result],
+      });
+      setHabilidadInput("");
+      setNivelInput("BEGINNER");
+    }
+  };
+
+  const deleteHabilidad = async (idx) => {
+    const skillId = user.habilidades[idx]._id;
+    const success = await removeSkill(skillId);
+    if (success) {
+      setAuthUser({
+        ...user,
+        habilidades: user.habilidades.filter((_, i) => i !== idx),
+      });
+    }
+  };
+
+  const loading = skillsLoading || experienceLoading;
 
   return (
-    <div className="min-h-screen bg-white py-0 flex flex-col">
-      <ProfileProgressBar porcentaje={porcentaje} />
-      <ProfileHeader
-        profile={profile}
-        showCVDialog={showCVDialog}
-        setShowCVDialog={setShowCVDialog}
-      />
-      <div className="w-full flex flex-col lg:flex-row gap-8 px-4 md:px-16 py-10">
-        <div className="w-full lg:w-1/2 flex flex-col gap-8">
-          <ProfileSummary profile={profile} refreshProfile={refreshProfile} />
+    <div className="min-h-screen bg-background flex flex-col items-center py-8 px-2 md:px-8 lg:px-0">
+      <div className="w-full max-w-5xl flex flex-col gap-8">
+        {/* Cabecera de perfil en Card */}
+        <Card className="w-full animate-fade-in shadow-lg border-none bg-card/90">
+          <CardContent className="py-8">
+            <ProfileHeader profile={profile} showCVDialog={showCVDialog} setShowCVDialog={setShowCVDialog} />
+          </CardContent>
+        </Card>
+        {/* Barra de progreso */}
+        <div className="w-full">
+          <ProfileProgressBar porcentaje={porcentaje} />
         </div>
-        <div className="w-full lg:w-1/2 flex flex-col gap-8">
-          {loading && <p className="text-blue-500">Cargando...</p>}
-          {error && <p className="text-red-500">{error}</p>}
-
-          <ExperienceSection
-            experiencia={experiencia}
-            expForm={expForm}
-            editExpIdx={editExpIdx}
-            setEditExpIdx={setEditExpIdx}
-            setExpForm={setExpForm}
-            addExperiencia={addExperiencia}
-            deleteExperiencia={deleteExperiencia}
-            handleExpChange={handleExpChange}
-          />
-          <EducationSection
-            educacion={educacion}
-            eduForm={eduForm}
-            editEduIdx={editEduIdx}
-            setEditEduIdx={setEditEduIdx}
-            setEduForm={setEduForm}
-            addEducacion={addEducacion}
-            deleteEducacion={deleteEducacion}
-            handleEduChange={handleEduChange}
-          />
-          <SkillsSection
-            habilidades={habilidades}
-            editHabilidades={editHabilidades}
-            setEditHabilidades={setEditHabilidades}
-            habilidadInput={habilidadInput}
-            setHabilidadInput={setHabilidadInput}
-            addHabilidad={addHabilidad}
-            deleteHabilidad={deleteHabilidad}
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Columna izquierda: Resumen y Educación */}
+          <div className="flex flex-col gap-8">
+            {/* Resumen */}
+            <Card className="w-full animate-fade-in shadow-md">
+              <CardHeader className="flex flex-row items-center gap-3 pb-2">
+                <UserCog className="text-primary" />
+                <CardTitle className="text-lg">Resumen</CardTitle>
+              </CardHeader>
+              <Separator />
+              <CardContent className="pt-4">
+                <ProfileSummary profile={profile} refreshProfile={refreshProfile} />
+              </CardContent>
+            </Card>
+            {/* Educación */}
+            <Card className="w-full animate-fade-in shadow-md">
+              <CardHeader className="flex flex-row items-center gap-3 pb-2">
+                <GraduationCap className="text-primary" />
+                <CardTitle className="text-lg">Educación</CardTitle>
+              </CardHeader>
+              <Separator />
+              <CardContent className="pt-4">
+                <EducationSection
+                  educacion={educacion}
+                  eduForm={eduForm}
+                  editEduIdx={editEduIdx}
+                  setEditEduIdx={setEditEduIdx}
+                  setEduForm={setEduForm}
+                  addEducacion={addEducacion}
+                  deleteEducacion={deleteEducacion}
+                  handleEduChange={handleEduChange}
+                />
+              </CardContent>
+            </Card>
+          </div>
+          {/* Columna derecha: Experiencia y Habilidades */}
+          <div className="flex flex-col gap-8">
+            {/* Experiencia */}
+            <Card className="w-full animate-fade-in shadow-md">
+              <CardHeader className="flex flex-row items-center gap-3 pb-2">
+                <Briefcase className="text-primary" />
+                <CardTitle className="text-lg">Experiencia</CardTitle>
+              </CardHeader>
+              <Separator />
+              <CardContent className="pt-4">
+                <ExperienceSection
+                  experiencia={experiences}
+                  expForm={expForm}
+                  editExpIdx={editExpIdx}
+                  setEditExpIdx={setEditExpIdx}
+                  setExpForm={setExpForm}
+                  addExperiencia={addExperiencia}
+                  deleteExperiencia={deleteExperiencia}
+                  handleExpChange={handleExpChange}
+                />
+              </CardContent>
+            </Card>
+            {/* Habilidades */}
+            <Card className="w-full animate-fade-in shadow-md">
+              <CardHeader className="flex flex-row items-center gap-3 pb-2">
+                <Star className="text-primary" />
+                <CardTitle className="text-lg">Habilidades</CardTitle>
+              </CardHeader>
+              <Separator />
+              <CardContent className="pt-4">
+                <SkillsSection
+                  habilidades={habilidades}
+                  editHabilidades={editHabilidades}
+                  setEditHabilidades={setEditHabilidades}
+                  habilidadInput={habilidadInput}
+                  setHabilidadInput={setHabilidadInput}
+                  nivelInput={nivelInput}
+                  setNivelInput={setNivelInput}
+                  addHabilidad={addHabilidad}
+                  deleteHabilidad={deleteHabilidad}
+                />
+              </CardContent>
+            </Card>
+          </div>
         </div>
+        {/* Mensajes de carga y error */}
+        {loading && <p className="text-blue-500 animate-pulse text-center">Cargando...</p>}
+        {error && <p className="text-red-500 text-center">{error}</p>}
       </div>
     </div>
   );
