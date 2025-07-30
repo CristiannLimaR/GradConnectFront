@@ -1,12 +1,9 @@
-import { getEnterpriseByRecruiter as getEnterpriseByRecruiterService } from "../../service/api";
-
+import { getEnterpriseByRecruiter as getEnterpriseByRecruiterService } from "../../service/api.js";
 import { useState } from "react";
-import { toast } from "sonner";
 
 export const useEnterprise = () => {
-  const [enterprise, setEnterprise] = useState([]);
+ const [enterprise, setEnterprise] = useState([]);
 
-  // Listar empresa-reclutador
   const getEnterpriseByRecruiter = async (id) => {
     const response = await getEnterpriseByRecruiterService(id);
 
@@ -25,6 +22,6 @@ export const useEnterprise = () => {
 
   return {
     getEnterpriseByRecruiter,
-    enterprise,
+    enterprise
   };
 };

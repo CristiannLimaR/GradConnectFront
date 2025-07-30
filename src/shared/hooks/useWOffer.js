@@ -4,7 +4,7 @@ import {
   saveWOffer as saveOfferReq,
   editWOffer as editOfferReq,
   deleteWOffer as deleteOfferReq,
-  getOffersByEnterprise as getOffersByEnterpriseReq
+  getOffersByEnterprise as getOffersByEnterpriseReq,
 } from "../../service/api";
 
 import { useState } from "react";
@@ -19,8 +19,7 @@ export const useOffer = () => {
 
     if (response.error) {
       toast.error("Error al obtener wOffers", {
-        description:
-          response.error?.response?.data || "Error al obtener wOffers",
+        description: response.message,
         duration: 2000,
       });
       return { error: true };
@@ -37,8 +36,7 @@ export const useOffer = () => {
 
     if (response.error) {
       toast.error("Error al obtener wOffers", {
-        description:
-          response.error?.response?.data || "Error al buscar la oferta.",
+        description: response.message,
         duration: 2000,
       });
       return { error: true };
@@ -52,10 +50,8 @@ export const useOffer = () => {
     const response = await saveOfferReq(data);
 
     if (response.error) {
-      toast.error("Error al obtener wOffers", {
-        description:
-          response.error?.response?.data || "Error al guardar la oferta.",
-        duration: 2000,
+      toast.error("Error al crear oferta", {
+        description: response.message,
       });
       return { error: true };
     }
@@ -68,9 +64,8 @@ export const useOffer = () => {
     const response = await editOfferReq(id, data);
 
     if (response.error) {
-      toast.error("Error al obtener wOffers", {
-        description:
-          response.error?.response?.data || "Error al editar la oferta.",
+      toast.error("Error al editar oferta", {
+        description: response.message,
         duration: 2000,
       });
       return { error: true };
@@ -85,8 +80,7 @@ export const useOffer = () => {
 
     if (response.error) {
       toast.error("Error al obtener wOffers", {
-        description:
-          response.error?.response?.data || "Error al editar la oferta.",
+        description: response.message,
         duration: 2000,
       });
       return { error: true };
@@ -97,19 +91,18 @@ export const useOffer = () => {
 
   // WOffers por empresa
   const getOffersByEnterprise = async (enterpriseId) => {
-    const response = await getOffersByEnterpriseReq(enterpriseId)
+    const response = await getOffersByEnterpriseReq(enterpriseId);
 
     if (response.error) {
       toast.error("Error al obtener wOffers por empresa", {
-        description:
-          response.error?.response?.data || "Error al obtener wOffers por empresa",
+        description: response.message,
         duration: 2000,
       });
       return { error: true };
     }
 
-    return response.data
-  }
+    return response.data;
+  };
 
   return {
     offers,
@@ -118,6 +111,6 @@ export const useOffer = () => {
     saveOffer,
     editOffer,
     deleteOffer,
-    getOffersByEnterprise
+    getOffersByEnterprise,
   };
 };

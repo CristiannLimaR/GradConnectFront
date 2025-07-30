@@ -77,74 +77,77 @@ export const getWOffers = async (data) => {
   } catch (error) {
     return {
       error: true,
-      error,
+      message: error?.response?.data?.msg || "Error inesperado",
     };
   }
 };
 
 export const searchWOffer = async (id) => {
   try {
-    return await apiClient.get(`/wOffer/search/${id}`)
+    return await apiClient.get(`/wOffer/search/${id}`);
   } catch (error) {
     return {
       error: true,
-      error,
+      message: error?.response?.data?.msg || "Error inesperado",
     };
   }
 };
 
 export const saveWOffer = async (formData) => {
   try {
-    return await apiClient.post(`/wOffer/save`, formData)
+    return await apiClient.post(`/wOffer/save`, formData);
   } catch (error) {
     return {
       error: true,
-      error,
+      message: error?.response?.data?.msg || "Error inesperado",
     };
   }
-}
+};
 
 export const editWOffer = async (id, data) => {
   try {
-    return await apiClient.put(`/wOffer/update/${id}`,data)
+    return await apiClient.put(`/wOffer/update/${id}`, data);
   } catch (error) {
     return {
       error: true,
-      error
-    }
+      message: error?.response?.data?.msg || "Error inesperado",
+    };
   }
-}
+};
 
 export const deleteWOffer = async (id) => {
   try {
-    return await apiClient.delete(`/wOffer/delete/${id}`)
+    return await apiClient.delete(`/wOffer/delete/${id}`);
   } catch (error) {
     return {
       error: true,
-      error
-    }
+      message: error?.response?.data?.msg || "Error inesperado",
+    };
   }
-}
+};
 
 export const getOffersByEnterprise = async (enterpriseId) => {
   try {
-    return await apiClient.get(`/wOffer/search/woffers/enterprise/${enterpriseId}`);
+    return await apiClient.get(
+      `/wOffer/search/woffers/enterprise/${enterpriseId}`
+    );
   } catch (error) {
     return {
       error: true,
-      error,
+      message: error?.response?.data?.msg || "Error inesperado",
     };
   }
-}
+};
 
 // ##### Enterprise #####
 export const getEnterpriseByRecruiter = async (recruiterId) => {
   try {
-    return await apiClient.get(`/enterprise/recruiter/${recruiterId}`);
+    const {data} = await apiClient.get(`/enterprise/recruiter/${recruiterId}`);
+    return { data };
   } catch (error) {
     return {
       error: true,
-      error
-    }
+      message: error?.response?.data?.msg || "Error inesperado",
+    };
   }
-}
+};
