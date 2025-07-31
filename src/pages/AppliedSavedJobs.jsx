@@ -6,7 +6,7 @@ import useAuthStore from '../shared/stores/authStore';
 export default function AppliedSavedJobs() {
   const { token } = useAuthStore();
   const [jobs, setJobs] = useState([]);
-  
+
   useEffect(() => {
     if (!token) {
       console.log("Token no disponible.");
@@ -15,16 +15,22 @@ export default function AppliedSavedJobs() {
 
     const fetchApplications = async () => {
       try {
+        console.log("Token enviado:", token);  // Verificar el token que se envía
+
         const res = await axios.get(
-          `http://localhost:3000/gradconnect/v1/solicitudes/`,
+          `http://localhost:3000/gradconnect/v1/solicitudes/usuario`,
           {
             headers: { 'x-token': token },
           }
         );
 
-        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-          const formattedJobs = res.data.map((app) => {
-            const offer = app.ofertaId; 
+        console.log("Respuesta de la API:", res.data);  // Mostrar la respuesta completa de la API
+
+        // Verifica que la respuesta contenga aplicaciones
+        if (res.data && res.data.applications && Array.isArray(res.data.applications) && res.data.applications.length > 0) {
+          const formattedJobs = res.data.applications.map((app) => {
+            const offer = app.ofertaId;  // Accedemos al objeto ofertaId dentro de cada postulación
+
             return {
               id: offer.id,
               title: offer.title,
@@ -54,7 +60,7 @@ export default function AppliedSavedJobs() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-4xl font-bold mb-8 text-gray-900">Trabajos Aplicados</h1>
-        
+
         {/* Sección de trabajos aplicados */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {jobs.length > 0 ? (
@@ -66,10 +72,10 @@ export default function AppliedSavedJobs() {
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-xl font-semibold text-gray-900">{job.title}</h3>
                 </div>
-                
+
                 <p className="text-gray-600">{job.company}</p>
                 <p className="text-gray-500 mb-4">{job.location}</p>
-                
+
                 <p className="text-gray-700 text-sm mb-4">{job.description}</p>
 
                 <div className="mt-4 flex justify-between items-center">
@@ -84,7 +90,10 @@ export default function AppliedSavedJobs() {
                 </div>
 
                 <div className="mt-4 text-gray-500 text-sm">
-                  <span><Calendar className="inline mr-2" />Cierra el: {new Date(job.closingDate).toLocaleDateString()}</span>
+                  <span>
+                    <Calendar className="inline mr-2" />
+                    Cierra el: {new Date(job.closingDate).toLocaleDateString()}
+                  </span>
                 </div>
 
                 <div className="mt-4">
@@ -109,8 +118,7 @@ export default function AppliedSavedJobs() {
         <div className="mt-12 text-center">
           <h2 className="text-2xl font-semibold text-gray-900">Trabajos Guardados</h2>
           <p className="text-gray-600 mt-2">Aquí puedes ver los trabajos que has guardado para consultar más tarde.</p>
-          
-          {/* Aquí podrías agregar una lista de trabajos guardados, si los tienes */}
+
           {/* Este es un ejemplo de cómo podrías mostrar los trabajos guardados */}
           <div className="mt-6 bg-white p-6 rounded-lg shadow-md">
             <p className="text-gray-500">No tienes trabajos guardados aún.</p>
