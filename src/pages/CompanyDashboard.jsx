@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-// Importaciones de componentes y hooks
+
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -20,6 +20,7 @@ import {
   Mail,
   Phone,
   Plus,
+  Trash2,
   X,
   TrendingUp,
   Briefcase,
@@ -30,6 +31,7 @@ import {
   Phone as PhoneIcon,
   Linkedin,
   Github,
+  Hand,
 } from "lucide-react";
 import {
   Dialog,
@@ -39,8 +41,9 @@ import {
 } from "../components/ui/dialog";
 import { useOffer } from "../shared/hooks/useWOffer";
 import { useEnterprise } from "../shared/hooks/useEnterprise";
+import { useSkills } from "../shared/hooks/useSkills.js";
 import useAuthStore from "../shared/stores/authStore.js";
-import { toast } from "sonner"; // Asegúrate de importar toast
+import { toast } from "sonner";
 
 const SECCIONES = [
   { key: "perfil", label: "Perfil de la empresa" },
@@ -49,13 +52,17 @@ const SECCIONES = [
 ];
 
 export default function CompanyDashboard() {
-  const { getOffersByEnterprise, saveOffer, editOffer, getWOffers } =
+  const { getOffersByEnterprise, saveOffer, editOffer, deleteOffer } =
     useOffer();
   const { user } = useAuthStore();
   const { getEnterpriseByRecruiter } = useEnterprise();
 
   const [offers, setOffers] = useState([]);
-  const [enterprise, setEnterprise] = useState(null); // Mantener como objeto, no array
+  const [enterprise, setEnterprise] = useState(null);
+
+  const [allSkills, setAllSkills] = useState([]);
+  const { getAllSkills, getSkillById } = useSkills();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -80,7 +87,6 @@ export default function CompanyDashboard() {
     closingDate: "",
     skills: [],
   });
-  const [nuevaSkill, setNuevaSkill] = useState("");
 
   // ############## FAKE DATA ##############
   // Simulación de datos de empresa y ofertas (solo para visualización, no para enviar al backend)
@@ -314,6 +320,16 @@ export default function CompanyDashboard() {
     fetchData();
   }, [user]);
 
+  useEffect(() => {
+    const cargarSkills = async () => {
+      const response = await getAllSkills();
+      if (response && Array.isArray(response)) {
+        setAllSkills(response);
+      }
+    };
+    cargarSkills();
+  }, []);
+
   // Cálculo de estadísticas
   const estadisticas = {
     totalOfertas: offers.length,
@@ -377,16 +393,6 @@ export default function CompanyDashboard() {
     setOfertaSeleccionada(null); // Asegurarse de que no haya oferta seleccionada al crear
   };
 
-  const agregarSkill = () => {
-    if (nuevaSkill.trim() && !formOferta.skills.includes(nuevaSkill.trim())) {
-      setFormOferta({
-        ...formOferta,
-        skills: [...formOferta.skills, nuevaSkill.trim()],
-      });
-      setNuevaSkill("");
-    }
-  };
-
   const eliminarSkill = (skill) => {
     setFormOferta({
       ...formOferta,
@@ -401,27 +407,58 @@ export default function CompanyDashboard() {
     });
   };
 
+  const handleOpenModal = async (oferta) => {
+    console.log("oferta.skills (original):", oferta.skills);
+
+    const resolvedSkills = await Promise.all(
+      oferta.skills.map(async (skill) => {
+        const skillId = typeof skill === "string" ? skill : skill._id;
+
+        try {
+          const resp = await getSkillById(skillId);
+          if (resp && resp.nameSkill) {
+            return resp.nameSkill;
+          } else {
+            return skillId; // Fallback
+          }
+        } catch (e) {
+          console.error("Error al obtener skill:", skillId, e);
+          return skillId;
+        }
+      })
+    );
+
+    const ofertaConSkillsConNombres = {
+      ...oferta,
+      skills: resolvedSkills,
+    };
+
+    console.log("Skills con nombres resueltos:", resolvedSkills);
+    setOfertaSeleccionada(ofertaConSkillsConNombres);
+    setIsModalOpen(true);
+  };
+
   const guardarOferta = async () => {
     // Validar que enterprise._id esté disponible
     if (!enterprise?.id) {
       toast.error("Error", {
-        description: "No se pudo obtener la información de la empresa. Intente recargar la página.",
+        description:
+          "No se pudo obtener la información de la empresa. Intente recargar la página.",
         duration: 3000,
       });
       return;
     }
 
-    console.log(enterprise.id)
-
     const datos = {
       ...formOferta,
       enterprise: enterprise.id, // Asegurarse de enviar el ID de la empresa
-      requirements: formOferta.requirements.split("\n").filter(req => req.trim() !== ""), // Filtrar requisitos vacíos
+      requirements: formOferta.requirements
+        .split("\n")
+        .filter((req) => req.trim() !== ""), // Filtrar requisitos vacíos
       salary: Number(formOferta.salary),
     };
 
-    // Eliminar campos que no son parte del modelo o que se manejan de otra forma
-    delete datos.company; // Si tenías un campo 'company' en el formOferta, elimínalo
+    delete datos.company;
 
     const res = editandoOferta
       ? await editOffer(ofertaSeleccionada.id, datos)
@@ -441,6 +478,21 @@ export default function CompanyDashboard() {
     setOfertaSeleccionada(null); // Limpiar la oferta seleccionada
   };
 
+  const eliminarOferta = async (id) => {
+    try {
+      const resp = await deleteOffer(id);
+      if (resp.error) {
+        const msg = resp.e?.response?.data?.msg || "Error eliminando oferta";
+        toast.error(msg);
+        return false;
+      }
+      toast.success("Oferta eliminada");
+      return true;
+    } catch (error) {
+      toast.error("Error inesperado eliminando oferta");
+      return false;
+    }
+  };
   const verPerfilCompleto = (candidato) => {
     // Redirigir a una nueva página con los datos del candidato
     const candidatoData = encodeURIComponent(JSON.stringify(candidato));
@@ -672,7 +724,9 @@ export default function CompanyDashboard() {
                           <h2 className="text-2xl font-bold mb-2">
                             {enterprise?.name || empresa.nombre}
                           </h2>
-                          <p className="text-gray-600">{enterprise?.description || empresa.descripcion}</p>
+                          <p className="text-gray-600">
+                            {enterprise?.description || empresa.descripcion}
+                          </p>
                         </div>
                         <Button
                           onClick={() => setEditandoPerfil(true)}
@@ -693,7 +747,9 @@ export default function CompanyDashboard() {
                               <p className="text-sm font-medium text-gray-600">
                                 Email
                               </p>
-                              <p className="text-gray-900">{enterprise?.email || empresa.email}</p>
+                              <p className="text-gray-900">
+                                {enterprise?.email || empresa.email}
+                              </p>
                             </div>
                           </div>
 
@@ -736,7 +792,11 @@ export default function CompanyDashboard() {
                                 LinkedIn
                               </p>
                               <p className="text-gray-900">
-                                {enterprise?.socialMediaLinks?.find(link => link.includes("linkedin")) || empresa.linkedin || "No especificado"}
+                                {enterprise?.socialMediaLinks?.find((link) =>
+                                  link.includes("linkedin")
+                                ) ||
+                                  empresa.linkedin ||
+                                  "No especificado"}
                               </p>
                             </div>
                           </div>
@@ -750,7 +810,11 @@ export default function CompanyDashboard() {
                                 GitHub
                               </p>
                               <p className="text-gray-900">
-                                {enterprise?.socialMediaLinks?.find(link => link.includes("github")) || empresa.github || "No especificado"}
+                                {enterprise?.socialMediaLinks?.find((link) =>
+                                  link.includes("github")
+                                ) ||
+                                  empresa.github ||
+                                  "No especificado"}
                               </p>
                             </div>
                           </div>
@@ -763,7 +827,9 @@ export default function CompanyDashboard() {
                               <p className="text-sm font-medium text-gray-600">
                                 Sitio web
                               </p>
-                              <p className="text-gray-900">{enterprise?.webSite || "www.miempresa.com"}</p>
+                              <p className="text-gray-900">
+                                {enterprise?.webSite || "www.miempresa.com"}
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -796,7 +862,9 @@ export default function CompanyDashboard() {
                           <Label>Descripción</Label>
                           <Textarea
                             placeholder="Describe tu empresa..."
-                            defaultValue={enterprise?.description || empresa.descripcion}
+                            defaultValue={
+                              enterprise?.description || empresa.descripcion
+                            }
                           />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -813,7 +881,9 @@ export default function CompanyDashboard() {
                             <Input
                               type="tel"
                               placeholder="Teléfono"
-                              defaultValue={enterprise?.contactNumber || empresa.telefono}
+                              defaultValue={
+                                enterprise?.contactNumber || empresa.telefono
+                              }
                             />
                           </div>
                         </div>
@@ -822,7 +892,9 @@ export default function CompanyDashboard() {
                           <Input
                             type="text"
                             placeholder="Ubicación"
-                            defaultValue={enterprise?.address || empresa.ubicacion}
+                            defaultValue={
+                              enterprise?.address || empresa.ubicacion
+                            }
                           />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -831,7 +903,11 @@ export default function CompanyDashboard() {
                             <Input
                               type="url"
                               placeholder="Enlace a LinkedIn"
-                              defaultValue={enterprise?.socialMediaLinks?.find(link => link.includes("linkedin")) || empresa.linkedin}
+                              defaultValue={
+                                enterprise?.socialMediaLinks?.find((link) =>
+                                  link.includes("linkedin")
+                                ) || empresa.linkedin
+                              }
                             />
                           </div>
                           <div>
@@ -839,7 +915,11 @@ export default function CompanyDashboard() {
                             <Input
                               type="url"
                               placeholder="Enlace a GitHub"
-                              defaultValue={enterprise?.socialMediaLinks?.find(link => link.includes("github")) || empresa.github}
+                              defaultValue={
+                                enterprise?.socialMediaLinks?.find((link) =>
+                                  link.includes("github")
+                                ) || empresa.github
+                              }
                             />
                           </div>
                         </div>
@@ -868,23 +948,32 @@ export default function CompanyDashboard() {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Fundada</span>
-                      <span className="font-medium">{enterprise?.createdAt ? new Date(enterprise.createdAt).getFullYear() : "N/A"}</span>
+                      <span className="font-medium">
+                        {enterprise?.createdAt
+                          ? new Date(enterprise.createdAt).getFullYear()
+                          : "N/A"}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Tamaño</span>
-                      <span className="font-medium">{enterprise?.size || "N/A"}</span>
+                      <span className="font-medium">
+                        {enterprise?.size || "N/A"}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Industria</span>
-                      <span className="font-medium">{enterprise?.industry || "N/A"}</span>
+                      <span className="font-medium">
+                        {enterprise?.industry || "N/A"}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Tipo</span>
-                      <span className="font-medium">{enterprise?.type || "N/A"}</span>
+                      <span className="font-medium">
+                        {enterprise?.type || "N/A"}
+                      </span>
                     </div>
                   </div>
                 </Card>
-
                 <Card className="p-6">
                   <h3 className="text-lg font-semibold mb-4">
                     Actividad reciente
@@ -963,6 +1052,7 @@ export default function CompanyDashboard() {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setOfertaSeleccionada(oferta);
+                                handleOpenModal(oferta);
                               }}
                               className="text-gray-400 hover:text-blue-600 p-1"
                               title="Ver detalles"
@@ -978,6 +1068,30 @@ export default function CompanyDashboard() {
                               }}
                             >
                               <Edit className="w-5 h-5" />
+                            </button>
+                            <button
+                              className="text-gray-400 hover:text-red-600 p-1"
+                              title="Eliminar oferta"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const confirmed = window.confirm(
+                                  "¿Estás seguro de eliminar esta oferta?"
+                                );
+                                if (!confirmed) return;
+
+                                const success = await eliminarOferta(oferta.id);
+                                if (success) {
+                                  // Volver a cargar ofertas
+                                  const updated = await getOffersByEnterprise(
+                                    enterprise.id
+                                  );
+                                  if (updated && updated.offers) {
+                                    setOffers(updated.offers);
+                                  }
+                                }
+                              }}
+                            >
+                              <Trash2 className="w-5 h-5" />
                             </button>
                             <button
                               className="text-gray-400 hover:text-blue-600 p-1"
@@ -1012,16 +1126,11 @@ export default function CompanyDashboard() {
                           >
                             {oferta.modality}
                           </span>
-                          {/* Asumiendo que 'location' puede indicar si es remoto */}
                           {oferta.location === "Remoto" && (
                             <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                               Remote
                             </span>
                           )}
-                          {/* Si tienes un campo 'level' en tu modelo de oferta, úsalo aquí */}
-                          {/* <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {oferta.level}
-                          </span> */}
                         </div>
                         <div className="text-sm text-gray-600">
                           <div className="flex items-center mb-1">
@@ -1038,10 +1147,7 @@ export default function CompanyDashboard() {
                   )}
                 </div>
                 {/* Modal para mostrar detalles completos */}
-                <Dialog
-                  open={!!ofertaSeleccionada}
-                  onOpenChange={() => setOfertaSeleccionada(null)}
-                >
+                <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                   <DialogContent className="max-w-2xl">
                     <DialogHeader>
                       <DialogTitle>Detalles de la oferta</DialogTitle>
@@ -1064,7 +1170,11 @@ export default function CompanyDashboard() {
                               </span>
                               <span className="flex items-center">
                                 <Clock className="w-4 h-4 mr-1" />
-                                {ofertaSeleccionada.createdAt ? new Date(ofertaSeleccionada.createdAt).toLocaleDateString() : 'N/A'}
+                                {ofertaSeleccionada.createdAt
+                                  ? new Date(
+                                      ofertaSeleccionada.createdAt
+                                    ).toLocaleDateString()
+                                  : "N/A"}
                               </span>
                               <span className="flex items-center">
                                 <Users className="w-4 h-4 mr-1" />
@@ -1078,27 +1188,7 @@ export default function CompanyDashboard() {
                             <Building className="w-4 h-4 mr-1" />
                             {ofertaSeleccionada.modality}
                           </span>
-                          {/* Si tienes un campo 'employees' en tu modelo de oferta, úsalo aquí */}
-                          {/* <span className="flex items-center text-gray-600">
-                            <Users className="w-4 h-4 mr-1" />
-                            {ofertaSeleccionada.employees}
-                          </span> */}
                         </div>
-                        {/* Este input de ubication no debería estar aquí, ya que es un modal de visualización */}
-                        {/* <div>
-                          <Label className="mb-2">
-                            Ciudad/Pais de la vacante *
-                          </Label>
-                          <Input
-                            type="text"
-                            placeholder="Ej: Dubai"
-                            value={formOferta.ubication} // Esto es incorrecto, debería ser ofertaSeleccionada.ubication
-                            onChange={(e) =>
-                              handleInputChange("ubication", e.target.value)
-                            }
-                            required
-                          />
-                        </div> */}
 
                         <div className="flex items-center space-x-4">
                           <span className="flex items-center text-gray-600">
@@ -1119,31 +1209,50 @@ export default function CompanyDashboard() {
                             Requisitos
                           </h3>
                           <ul className="list-disc list-inside text-gray-600">
-                            {ofertaSeleccionada.requirements?.map((req, index) => (
-                              <li key={index}>{req}</li>
-                            ))}
+                            {ofertaSeleccionada.requirements?.map(
+                              (req, index) => (
+                                <li key={index}>{req}</li>
+                              )
+                            )}
                           </ul>
                         </div>
-                        {ofertaSeleccionada.skills && ofertaSeleccionada.skills.length > 0 && (
-                          <div className="border-t pt-6">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                              Habilidades
-                            </h3>
-                            <div className="flex flex-wrap gap-2">
-                              {ofertaSeleccionada.skills.map((skill, index) => (
-                                <span key={index} className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                  {skill.name || skill} {/* Asumiendo que skill puede ser un objeto con 'name' o solo el nombre */}
-                                </span>
-                              ))}
+                        {ofertaSeleccionada.skills &&
+                          ofertaSeleccionada.skills.length > 0 && (
+                            <div className="border-t pt-6">
+                              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                                Habilidades
+                              </h3>
+                              <div className="flex flex-wrap gap-2">
+                                {ofertaSeleccionada.skills.map(
+                                  (skill, index) => (
+                                    <span
+                                      key={index}
+                                      className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                                    >
+                                      {skill}
+                                    </span>
+                                  )
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
                         <div className="flex gap-2 pt-4">
-                          <Button variant="outline" onClick={() => {
-                            setOfertaSeleccionada(null); // Cerrar modal de detalles
-                            abrirFormularioEdicion(ofertaSeleccionada); // Abrir formulario de edición
-                          }}>Editar oferta</Button>
-                          <Button onClick={() => mostrarCandidatos(ofertaSeleccionada.id)}>Ver candidatos</Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setOfertaSeleccionada(null); // Cerrar modal de detalles
+                              abrirFormularioEdicion(ofertaSeleccionada); // Abrir formulario de edición
+                            }}
+                          >
+                            Editar oferta
+                          </Button>
+                          <Button
+                            onClick={() =>
+                              mostrarCandidatos(ofertaSeleccionada.id)
+                            }
+                          >
+                            Ver candidatos
+                          </Button>
                         </div>
                       </div>
                     )}
@@ -1255,19 +1364,10 @@ export default function CompanyDashboard() {
                           required
                         />
                       </div>
-                      {/* El campo de empresa no es necesario que el usuario lo edite, se toma del estado 'enterprise' */}
-                      {/* <div>
-                        <Label className="mb-2">Empresa *</Label>
-                        <Input
-                          type="text"
-                          placeholder="Nombre de la empresa"
-                          value={enterprise?.name || ""} // Mostrar el nombre de la empresa, pero no permitir editar
-                          readOnly // Hacerlo de solo lectura
-                          required
-                        />
-                      </div> */}
                       <div>
-                        <Label className="mb-2">Ubicación (Remoto/Presencial/Híbrido) *</Label>
+                        <Label className="mb-2">
+                          Ubicación (Remoto/Presencial/Híbrido) *
+                        </Label>
                         <Input
                           type="text"
                           placeholder="Ej: Presencial, Remoto, Híbrido"
@@ -1279,7 +1379,9 @@ export default function CompanyDashboard() {
                         />
                       </div>
                       <div>
-                        <Label className="mb-2">Modalidad (Tiempo Completo/Medio Tiempo) *</Label>
+                        <Label className="mb-2">
+                          Modalidad (Tiempo Completo/Medio Tiempo) *
+                        </Label>
                         <Input
                           type="text"
                           placeholder="Ej: Tiempo Completo, Medio Tiempo"
@@ -1303,7 +1405,9 @@ export default function CompanyDashboard() {
                         />
                       </div>
                       <div>
-                        <Label className="mb-2">Ciudad/País de la vacante *</Label>
+                        <Label className="mb-2">
+                          Ciudad/País de la vacante *
+                        </Label>
                         <Input
                           type="text"
                           placeholder="Ej: Dubai"
@@ -1340,7 +1444,9 @@ export default function CompanyDashboard() {
                     </div>
 
                     <div>
-                      <Label className="mb-2">Requisitos (uno por línea) *</Label>
+                      <Label className="mb-2">
+                        Requisitos (uno por línea) *
+                      </Label>
                       <Textarea
                         placeholder="Lista los requisitos mínimos para el puesto (cada requisito en una nueva línea)..."
                         value={formOferta.requirements}
@@ -1353,46 +1459,60 @@ export default function CompanyDashboard() {
                     </div>
 
                     <div>
-                      <Label className="mb-2">Habilidades técnicas (IDs de habilidades)</Label>
-                      <div className="space-y-3">
-                        <div className="flex gap-2">
-                          <Input
-                            type="text"
-                            placeholder="Agregar ID de habilidad (ej: 665f70d0a7ad35481a36f151)"
-                            value={nuevaSkill}
-                            onChange={(e) => setNuevaSkill(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                agregarSkill();
-                              }
-                            }}
-                          />
-                          <Button
-                            type="button"
-                            onClick={agregarSkill}
-                            variant="outline"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </Button>
+                      <Label className="mb-2">Habilidades técnicas</Label>
+                      <div>
+                        <Label className="mb-2">
+                          Seleccionar habilidades técnicas
+                        </Label>
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {allSkills.map((skill) => (
+                            <button
+                              key={skill._id}
+                              type="button"
+                              className={`px-3 py-1 rounded-full text-sm border ${
+                                formOferta.skills.includes(skill._id)
+                                  ? "bg-blue-500 text-white"
+                                  : "bg-gray-200 text-gray-700"
+                              }`}
+                              onClick={() => {
+                                if (!formOferta.skills.includes(skill._id)) {
+                                  setFormOferta({
+                                    ...formOferta,
+                                    skills: [...formOferta.skills, skill._id],
+                                  });
+                                }
+                              }}
+                            >
+                              {skill.nameSkill}
+                            </button>
+                          ))}
                         </div>
+
+                        {/* Muestra las skills seleccionadas con opción de eliminar */}
                         {formOferta.skills.length > 0 && (
                           <div className="flex flex-wrap gap-2">
-                            {formOferta.skills.map((skill, index) => (
-                              <div
-                                key={index}
-                                className="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
-                              >
-                                <span>{skill}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => eliminarSkill(skill)}
-                                  className="text-blue-600 hover:text-blue-800"
+                            {formOferta.skills.map((skillId) => {
+                              const skill = allSkills.find(
+                                (s) => s._id === skillId
+                              );
+                              return (
+                                <div
+                                  key={skillId}
+                                  className="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
                                 >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </div>
-                            ))}
+                                  <span>
+                                    {skill?.nameSkill || "Skill desconocida"}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => eliminarSkill(skillId)}
+                                    className="text-blue-600 hover:text-blue-800"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </div>

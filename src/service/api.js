@@ -151,3 +151,22 @@ export const getEnterpriseByRecruiter = async (recruiterId) => {
     };
   }
 };
+
+// ##### Skills #####
+export const getAllSkills = async () => {
+  try {
+    const response = await apiClient.get(`http://localhost:3000/gradConnect/v1/skills/all`);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+export const getSkillById = async (skillId) => {
+  try {
+    const response = await apiClient.get(`/skills/${skillId}`);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
