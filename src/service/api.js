@@ -170,3 +170,15 @@ export const deleteEnterprise = async (id) => {
     }
   }
 }
+
+export const updateEnterprise = async (id, data) => {
+  try {
+    console.log("Updating enterprise with data:", data);
+    return await apiClient.put(`/enterprise/${id}`, data);
+  } catch (error) {
+    return {
+      error: true,
+      error
+    }
+  }
+}

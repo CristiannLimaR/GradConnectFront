@@ -70,10 +70,7 @@ export default function CompanyManagement() {
           data={companies}
           columns={companyColumns({
             deleteEnterprise,
-            onViewProfile: (company) => {
-              setSelectedCompany(company);
-              setIsModalOpen(true);
-            },
+            onViewProfile: handleViewProfile
           })}
           searchKey={["name", "email", "adminUser.firstName"]}
           searchPlaceholder="Buscar empresas por nombre, descripción o sector..."

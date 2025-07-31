@@ -33,8 +33,7 @@ import {
   Globe,
   Mail as MailIcon,
   Phone as PhoneIcon,
-  Linkedin,
-  Github,
+  Link2,
 } from "lucide-react";
 import {
   Dialog,
@@ -45,6 +44,7 @@ import {
 import { useOffer } from "../shared/hooks/useWOffer";
 import { useEnterprise } from "../shared/hooks/useEnterprise";
 import useAuthStore from "../shared/stores/authStore.js";
+import { toast } from "sonner";
 
 const SECCIONES = [
   { key: "perfil", label: "Perfil de la empresa" },
@@ -56,7 +56,7 @@ export default function CompanyDashboard() {
   const { getOffersByEnterprise, saveOffer, editOffer, getWOffers } =
     useOffer();
   const { user } = useAuthStore();
-  const { getEnterpriseByRecruiter } = useEnterprise();
+  const { getEnterpriseByRecruiter, updateEnterprise } = useEnterprise();
   
   const [offers, setOffers] = useState([]);
   const [enterprise, setEnterprise] = useState(null);
@@ -84,6 +84,9 @@ export default function CompanyDashboard() {
     closingDate: "",
     skills: [],
   });
+
+  
+
   const [nuevaSkill, setNuevaSkill] = useState("");
 
   // ############## FAKE DATA ##############
@@ -307,11 +310,6 @@ export default function CompanyDashboard() {
       const recruiterId = user._id || user.id;
 
       const enterpriseResponse = await getEnterpriseByRecruiter(recruiterId);
-      console.log("Enterprise Response: ", enterpriseResponse);
-      console.log(
-        "LE ENVIAMOS ESTO A ESTE MAN: ",
-        enterpriseResponse.enterprise.id
-      );
 
       if (enterpriseResponse && enterpriseResponse.enterprise) {
         console.log(" Empresa encontrada:", enterpriseResponse.enterprise);
@@ -339,10 +337,35 @@ export default function CompanyDashboard() {
     fetchData();
   }, [user]);
 
-  // Mapear Ofertas
-  const offerTitles = offers.map((offer) => offer.title);
-  const salaries = offers.map((offer) => offer.salary);
-  const modalities = offers.map((offer) => offer.modality);
+  const [formData, setFormData] = useState({
+    name: enterprise?.name || "",
+    description: enterprise?.description || "",
+    email: enterprise?.email || "",
+    contactNumber: enterprise?.contactNumber || "",
+    address: enterprise?.address || "",
+    socialMediaLinks: enterprise?.socialMediaLinks || "",
+    webSite: enterprise?.webSite || "",
+    size: enterprise?.size || "",
+    industry: enterprise?.industry || "",
+    type: enterprise?.type || "",
+  });
+
+  useEffect(() => {
+  if (enterprise) {
+    setFormData({
+      name: enterprise.name || "",
+      description: enterprise.description || "",
+      email: enterprise.email || "",
+      contactNumber: enterprise.contactNumber || "",
+      address: enterprise.address || "",
+      socialMediaLinks: enterprise?.socialMediaLinks || "",
+      webSite: enterprise.webSite || "",
+      size: enterprise?.size || "",
+      industry: enterprise?.industry || "",
+      type: enterprise?.type || "",
+    });
+  }
+}, [enterprise]);
 
   // Cálculo de estadísticas
   const estadisticas = {
@@ -483,9 +506,6 @@ export default function CompanyDashboard() {
       }
     }
   }, [location.search]);
-
-
-
 
 
   if (!enterprise) {
@@ -698,7 +718,9 @@ export default function CompanyDashboard() {
                           <h2 className="text-2xl font-bold mb-2">
                             {enterprise.name}
                           </h2>
-                          <p className="text-gray-600">{enterprise.description}</p>
+                          <p className="text-gray-600">
+                            {enterprise.description}
+                          </p>
                         </div>
                         <Button
                           onClick={() => setEditandoPerfil(true)}
@@ -719,7 +741,9 @@ export default function CompanyDashboard() {
                               <p className="text-sm font-medium text-gray-600">
                                 Email
                               </p>
-                              <p className="text-gray-900">{enterprise.email}</p>
+                              <p className="text-gray-900">
+                                {enterprise.email}
+                              </p>
                             </div>
                           </div>
 
@@ -745,7 +769,7 @@ export default function CompanyDashboard() {
                               <p className="text-sm font-medium text-gray-600">
                                 Ubicación
                               </p>
-                              <p className="text-gray-900">
+                              <p className="text-gray-900 text truncate overflow-hidden whitespace-nowrap max-w-[200px]">
                                 {enterprise.address || "No especificado"}
                               </p>
                             </div>
@@ -755,28 +779,28 @@ export default function CompanyDashboard() {
                         <div className="space-y-4">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                              <Linkedin className="w-5 h-5 text-orange-600" />
+                              <User className="w-5 h-5 text-orange-600" />
                             </div>
                             <div>
                               <p className="text-sm font-medium text-gray-600">
-                                LinkedIn
+                                Reclutador 
                               </p>
                               <p className="text-gray-900">
-                                {empresa.linkedin || "No especificado"}
+                                {enterprise.recruiters[0].firstName +" "+ enterprise.recruiters[0].lastName || "No especificado" }
                               </p>
                             </div>
                           </div>
 
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                              <Github className="w-5 h-5 text-gray-600" />
+                              <Link2   className="w-5 h-5 text-gray-600" />
                             </div>
                             <div>
                               <p className="text-sm font-medium text-gray-600">
-                                GitHub
+                                Social Media
                               </p>
-                              <p className="text-gray-900">
-                                {empresa.github || "No especificado"}
+                              <p className="text-gray-900 text truncate overflow-hidden whitespace-nowrap max-w-[200px]">
+                                {enterprise?.socialMediaLinks[0] || "Sin redes"}
                               </p>
                             </div>
                           </div>
@@ -789,7 +813,9 @@ export default function CompanyDashboard() {
                               <p className="text-sm font-medium text-gray-600">
                                 Sitio web
                               </p>
-                              <p className="text-gray-900">{enterprise. webSite}</p>
+                              <p className="text-gray-900">
+                                {enterprise.webSite}
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -809,64 +835,182 @@ export default function CompanyDashboard() {
                           Cancelar
                         </Button>
                       </div>
-                      <form className="space-y-4">
+                      <form
+                        className="space-y-4"
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          const result = await updateEnterprise(
+                            enterprise.id,
+                            formData
+                          );
+                          const rechargeEnterprise = await getEnterpriseByRecruiter(
+                            user._id || user.id
+                          );
+                          setEnterprise(rechargeEnterprise.enterprise);
+                          if (!result.error) {
+                            setEditandoPerfil(false); // oculta el formulario si todo salió bien
+                          }
+                        }}
+                      >
                         <div>
-                          <Label>Nombre de la empresa</Label>
+                          <Label className="mb-2">Nombre de la empresa</Label>
                           <Input
                             type="text"
-                            placeholder="Nombre de la empresa"
-                            defaultValue={enterprise.name}
+                            placeholder="nombre de la empresa"
+                            value={formData.name}
+                            onChange={(e) =>
+                              setFormData({ ...formData, name: e.target.value })
+                            }
                           />
                         </div>
                         <div>
-                          <Label>Descripción</Label>
+                          <Label className="mb-2">Descripción</Label>
                           <Textarea
                             placeholder="Describe tu empresa..."
-                            defaultValue={enterprise.description}
+                            value={formData.description}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                description: e.target.value,
+                              })
+                            }
                           />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <Label>Email</Label>
+                            <Label className="mb-2">Email</Label>
                             <Input
                               type="email"
                               placeholder="Correo de contacto"
-                              defaultValue={enterprise.email}
+                              value={formData.email}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  email: e.target.value,
+                                })
+                              }
                             />
                           </div>
                           <div>
-                            <Label>Teléfono</Label>
+                            <Label className="mb-2">Teléfono</Label>
                             <Input
                               type="tel"
                               placeholder="Teléfono"
-                              defaultValue={enterprise.contactNumber}
+                              value={formData.contactNumber}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  contactNumber: e.target.value,
+                                })
+                              }
                             />
                           </div>
-                        </div>
-                        <div>
-                          <Label>Ubicación</Label>
-                          <Input
-                            type="text"
-                            placeholder="Ubicación"
-                            defaultValue={enterprise.address}
-                          />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <Label>LinkedIn</Label>
+                            <Label className="mb-2">Tamaño</Label>
+                              <select
+                                className="select select-bordered text-white"
+                                value={formData.size}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    size: e.target.value,
+                                  })
+                                }
+                              >
+                                <option value="">Seleccione un tamaño</option>
+                                <option value="Small">Small</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Large">Large</option>
+                              </select>
+                          </div>
+                          <div>
+                            <Label className="mb-2">Tipo</Label>
+                              <select
+                                className="select select-bordered text-white"
+                                value={formData.type}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    type: e.target.value,
+                                  })
+                                }
+                              >
+                                <option value="">Seleccione un tipo</option>
+                                <option value="Startup">Startup</option>
+                                <option value="SME">SME</option>
+                                <option value="Corporation">Corporation</option>
+                                <option value="Non-Profit">Non-Profit</option>
+                              </select>
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="mb-2">Ubicación</Label>
+                          <Input
+                            type="text"
+                            placeholder="Ubicación"
+                            value={formData.address}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                address: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                        <div>
+                      <Label className="mb-2">Redes Sociales *</Label>
+                      <Textarea
+                        placeholder="Lista de redes sociales"
+                        value={formData.socialMediaLinks}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            socialMediaLinks: e.target.value,
+                          })
+                        }
+                        rows={3}
+                      />
+                    </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label className="mb-2">Sitio web</Label>
                             <Input
                               type="url"
-                              placeholder="Enlace a LinkedIn"
-                              defaultValue={empresa.linkedin}
+                              placeholder="Enlace al sitio web"
+                              value={formData.webSite}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  webSite: e.target.value,
+                                })
+                              }
                             />
                           </div>
                           <div>
-                            <Label>GitHub</Label>
-                            <Input
-                              type="url"
-                              placeholder="Enlace a GitHub"
-                              defaultValue={empresa.github}
-                            />
+                            <Label className="mb-2">Industria</Label>
+                              <select
+                                className="select select-bordered text-white"
+                                value={formData.industry}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    industry: e.target.value,
+                                  })
+                                }
+                              >
+                                <option value="">Seleccione una indistria</option>
+                                <option value="Technology">Technology</option>
+                                <option value="Health">Health</option>
+                                <option value="Education">Education</option>
+                                <option value="Finance">Finance</option>
+                                <option value="Retail">Retail</option>
+                                <option value="Manufacturing">Manufacturing</option>
+                                <option value="Hospitality">Hospitality</option>
+                                <option value="Construction">Construction</option>
+                                <option value="Other">Other</option>
+                              </select>
                           </div>
                         </div>
                         <div className="flex gap-2">
