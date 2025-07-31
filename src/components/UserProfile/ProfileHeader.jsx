@@ -1,128 +1,48 @@
-import React, { useRef, useState } from "react";
-import { User, Upload, Github, Linkedin } from "lucide-react";
-import useAuthStore from "../../shared/stores/authStore";
-import { useProfile } from "../../shared/hooks/useProfile";
-import { toast } from "sonner";
+import React from 'react';
+import { User, Upload, Github, Linkedin } from 'lucide-react';
 
-export default function ProfileHeader({ profile, showCVDialog, setShowCVDialog }) {
-  const fileInputRef = useRef(null);
-  const { saveProfile, isSaving } = useProfile();
-  const updateUserStore = useAuthStore((state) => state.updateUser);
-
-  const [localFoto, setLocalFoto] = useState(null);
-
-  // Manejar selección de nueva foto
-  const handleFotoChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      toast.error("Solo puedes subir imágenes.");
-      return;
-    }
-
-    setLocalFoto(file);
-
-    // Crear FormData para enviar al backend solo con la foto
-    const formData = new FormData();
-    formData.append("foto", file);
-
-    const success = await saveProfile(formData);
-
-    if (success) {
-      // Actualizar store y local foto
-      updateUserStore((user) => ({
-        ...user,
-        profilePhoto: URL.createObjectURL(file), // O la URL real que devuelve backend si la tienes
-      }));
-      toast.success("Foto de perfil actualizada");
-    } else {
-      setLocalFoto(null); // reset si falla
-    }
-  };
-
+export default function ProfileHeader({ profile, showCVDialog, setShowCVDialog, setEditProfile }) {
+  // Aquí puedes recibir los datos del usuario por props o desde un hook de API
   return (
     <div className="w-full flex flex-col md:flex-row items-center md:items-end gap-8 px-4 md:px-16 pt-10 pb-8 border-b">
       <div className="flex flex-col items-center md:items-start gap-3 md:gap-4">
         <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-4 border-blue-200 shadow">
-          {localFoto ? (
-            <img
-              src={URL.createObjectURL(localFoto)}
-              alt="Nueva foto de perfil"
-              className="w-full h-full object-cover"
-            />
-          ) : profile.foto ? (
-            typeof profile.foto === "string" ? (
-              <img
-                src={profile.foto}
-                alt="Foto de perfil"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <img
-                src={URL.createObjectURL(profile.foto)}
-                alt="Foto de perfil"
-                className="w-full h-full object-cover"
-              />
-            )
+          {profile.foto ? (
+            <img src={URL.createObjectURL(profile.foto)} alt="Foto de perfil" className="w-full h-full object-cover" />
           ) : (
             <User className="w-20 h-20 text-blue-400" />
           )}
         </div>
-
-        <label
-          className={`cursor-pointer text-blue-600 hover:underline flex items-center gap-2 text-sm ${
-            isSaving ? "opacity-50 pointer-events-none" : ""
-          }`}
-        >
+        <label className="cursor-pointer text-blue-600 hover:underline flex items-center gap-2 text-sm">
           <Upload className="w-4 h-4" /> Cambiar foto
-          <input
-            type="file"
-            name="foto"
-            accept="image/*"
-            className="hidden"
-            onChange={handleFotoChange}
-            ref={fileInputRef}
-            disabled={isSaving}
-          />
+          <input type="file" name="foto" accept="image/*" className="hidden" disabled />
         </label>
       </div>
-
       <div className="flex-1 flex flex-col items-center md:items-start gap-2">
-        <h2 className="text-3xl font-bold text-gray-900">
-          {profile.nombre || "Nombre"} {profile.apellido || "Apellido"}
-        </h2>
-
+        <h2 className="text-3xl font-bold text-gray-900">{profile.nombre || 'Nombre'} {profile.apellido || 'Apellido'}</h2>
         {profile.descripcion && (
           <p className="text-gray-700 text-base mb-2 mt-1 max-w-xl">{profile.descripcion}</p>
         )}
-
         <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4 text-gray-500 text-base">
-          <span>{profile.email || "Email"}</span>
+          <span>{profile.email || 'Email'}</span>
           <span className="hidden md:inline">|</span>
-          <span>{profile.ubicacion || "Ubicación"}</span>
+          <span>{profile.ubicacion || 'Ubicación'}</span>
           <span className="hidden md:inline">|</span>
-          <span>{profile.telefono || "Teléfono"}</span>
+          <span>{profile.telefono || 'Teléfono'}</span>
         </div>
-
         <div className="flex gap-4 mt-2">
           {profile.github && (
-            <a href={profile.github} target="_blank" rel="noopener noreferrer" className="hover:text-blue-700">
-              <Github className="w-6 h-6" />
-            </a>
+            <a href={profile.github} target="_blank" rel="noopener noreferrer" className="hover:text-blue-700"><Github className="w-6 h-6" /></a>
           )}
           {profile.linkedin && (
-            <a href={profile.linkedin} target="_blank" rel="noopener noreferrer" className="hover:text-blue-700">
-              <Linkedin className="w-6 h-6" />
-            </a>
+            <a href={profile.linkedin} target="_blank" rel="noopener noreferrer" className="hover:text-blue-700"><Linkedin className="w-6 h-6" /></a>
           )}
         </div>
-
+        <button onClick={() => setEditProfile(true)} className="mt-4 text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm">Editar perfil</button>
         <div className="mt-2">
-          <span className="font-semibold">CV:</span>{" "}
-          {profile.cv ? (
+          <span className="font-semibold">CV:</span> {profile.cv ? (
             <>
-              <span className="text-blue-600">{profile.cv.name || "CV"}</span>
+              <span className="text-blue-600">{profile.cv.name}</span>
               <button
                 type="button"
                 className="ml-2 text-blue-600 underline hover:text-blue-800 text-sm"
@@ -131,11 +51,9 @@ export default function ProfileHeader({ profile, showCVDialog, setShowCVDialog }
                 Ver
               </button>
             </>
-          ) : (
-            "No subido"
-          )}
+          ) : 'No subido'}
         </div>
-
+        {/* Modal para previsualización del CV */}
         {showCVDialog && profile.cv && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
             <div className="bg-white rounded-lg shadow-lg p-4 max-w-2xl w-full relative">
@@ -147,7 +65,7 @@ export default function ProfileHeader({ profile, showCVDialog, setShowCVDialog }
               </button>
               <h2 className="text-lg font-semibold mb-2">Previsualización del CV</h2>
               <embed
-                src={typeof profile.cv === "string" ? profile.cv : URL.createObjectURL(profile.cv)}
+                src={URL.createObjectURL(profile.cv)}
                 type="application/pdf"
                 width="100%"
                 height="500px"
@@ -158,4 +76,4 @@ export default function ProfileHeader({ profile, showCVDialog, setShowCVDialog }
       </div>
     </div>
   );
-}
+} 

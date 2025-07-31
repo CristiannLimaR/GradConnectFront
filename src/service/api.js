@@ -2,17 +2,22 @@ import axios from "axios";
 import useAuthStore from "../shared/stores/authStore";
 
 const apiClient = axios.create({
-  baseURL: "http://localhost:3000/gradConnect/v1",
+  baseURL: "http://localhost:3000/gradconnect/v1",
   timeout: 5000,
 });
-
 apiClient.interceptors.request.use(
   (config) => {
     const token = useAuthStore.getState().getToken();
-    if (token) config.headers["x-token"] = token;
+
+    if (token) {
+      config.headers["x-token"] = token;
+    }
+
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
 apiClient.interceptors.response.use(
@@ -28,69 +33,147 @@ apiClient.interceptors.response.use(
 
 export default apiClient;
 
+// Iniciar sesión
 export const login = async (data) => {
   try {
-    const res = await apiClient.post("/auth/login", data);
-    const { token, user } = res.data;
+    const response = await apiClient.post("/auth/login", data);
+    const { token, user } = response.data;
+
     useAuthStore.getState().login(user, token);
-    return { data: { token, user } };
+
+    return {
+      data: {
+        token,
+        user,
+      },
+    };
   } catch (e) {
-    return { error: true, e };
+    return {
+      error: true,
+      e,
+    };
   }
 };
 
 export const register = async (data) => {
   try {
     return await apiClient.post("/auth/register", data, {
-      headers: { "Content-Type": "multipart/form-data" },
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
     });
   } catch (e) {
-    return { error: true, e };
+    return {
+      error: true,
+      e,
+    };
   }
 };
 
-export const updateProfile = async (formData) => {
-  const id = useAuthStore.getState().getUser().id;
+// ##### wOffers #####
+export const getWOffers = async (data) => {
   try {
-    const res = await apiClient.put(`/user/${id}`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-
-    return { updatedUser: res.data.user };
-  } catch (e) {
-    return { error: true, e };
+    return await apiClient.get(`/wOffer/`, data);
+  } catch (error) {
+    return {
+      error: true,
+      message: error?.response?.data?.msg || "Error inesperado",
+    };
   }
 };
 
-export const changePassword = async (id, passwordData) => {
+export const searchWOffer = async (id) => {
   try {
-    const response = await fetch(`/api/users/updatePassword/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(passwordData)
-    });
-    return await response.json();
-  } catch (e) {
-    return { error: true, e };
+    return await apiClient.get(`/wOffer/search/${id}`);
+  } catch (error) {
+    return {
+      error: true,
+      message: error?.response?.data?.msg || "Error inesperado",
+    };
   }
 };
 
-export const adminUpdateUser = async (id, data) => {
+export const saveWOffer = async (formData) => {
   try {
-    return await apiClient.put(`/user/${id}`, data, {
-      headers: data instanceof FormData
-        ? { "Content-Type": "multipart/form-data" }
-        : {},
-    });
-  } catch (e) {
-    return { error: true, e };
+    return await apiClient.post(`/wOffer/save`, formData);
+  } catch (error) {
+    return {
+      error: true,
+      message: error?.response?.data?.msg || "Error inesperado",
+    };
   }
 };
 
-export const adminDeleteUser = async (id) => {
+export const editWOffer = async (id, data) => {
   try {
-    return await apiClient.delete(`/user/${id}`);
-  } catch (e) {
-    return { error: true, e };
+    return await apiClient.put(`/wOffer/update/${id}`, data);
+  } catch (error) {
+    return {
+      error: true,
+      message: error?.response?.data?.msg || "Error inesperado",
+    };
+  }
+};
+
+export const deleteWOffer = async (id) => {
+  try {
+    return await apiClient.delete(`/wOffer/delete/${id}`);
+  } catch (error) {
+    return {
+      error: true,
+      message: error?.response?.data?.msg || "Error inesperado",
+    };
+  }
+};
+
+export const getOffersByEnterprise = async (enterpriseId) => {
+  try {
+    return await apiClient.get(
+      `/wOffer/search/woffers/enterprise/${enterpriseId}`
+    );
+  } catch (error) {
+    return {
+      error: true,
+      message: error?.response?.data?.msg || "Error inesperado",
+    };
+  }
+};
+
+
+// ##### Job Applications #####
+
+export const applyToOffer = async (data) => {
+  try {
+    const token = useAuthStore.getState().getToken();
+
+    const response = await apiClient.post('/solicitudes', data, {
+      headers: {
+        'x-token': token, 
+      }
+    });
+
+    return {
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      error: true,
+      message: error?.response?.data?.msg || error?.response?.data?.error || "Error al aplicar a la oferta",
+    };
+  }
+};
+
+
+
+// ##### Enterprise #####
+export const getEnterpriseByRecruiter = async (recruiterId) => {
+  try {
+    const {data} = await apiClient.get(`/enterprise/recruiter/${recruiterId}`);
+    return { data };
+  } catch (error) {
+    return {
+      error: true,
+      message: error?.response?.data?.msg || "Error inesperado",
+    };
   }
 };
