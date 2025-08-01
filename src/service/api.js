@@ -98,59 +98,162 @@ export const adminDeleteUser = async (id) => {
 
 export const saveExperience = async (data) => {
   try {
-    const response = await apiClient.post("/experience/save/", data);
+    const response = await apiClient.post("/experience", data);
     return { success: true, data: response.data };
   } catch (e) {
-    return { success: false, e };
+    return { success: false, error: e };
   }
 };
-
 
 export const getExperience = async () => {
   try {
     const response = await apiClient.get("/experience");
     return { success: true, data: response.data };
   } catch (e) {
-    return { success: false, e };
+    return { success: false, error: e };
   }
 };
 
 export const updateExperience = async (experienceId, data) => {
   try {
-    const response = await apiClient.put(`/experience/update/${experienceId}`, data);
+    const response = await apiClient.put(`/experience/${experienceId}`, data);
     return { success: true, data: response.data };
   } catch (e) {
-    return { success: false, e };
+    return { success: false, error: e };
   }
 };
 
 export const deleteExperience = async (experienceId) => {
   try {
-    const response = await apiClient.delete(`/experience/delete/${experienceId}`);
-    return { success: true, data: response.data };
-  } catch (e) {
-    return { success: false, e };
-  }
-};
-
-export const saveSkills = async (data) => {
-  try {
-    const response = await apiClient.post("/skills", data);
+    const response = await apiClient.delete(`/experience/${experienceId}`);
     return { success: true, data: response.data };
   } catch (e) {
     return { success: false, error: e };
   }
 };
 
-export const getSkills = async (userId) => {
+
+export const getUserSkills = async () => {
   try {
-    const response = await apiClient.get(`/skills/user/${userId}`);
+    const response = await apiClient.get(`/user/skills`);
+    return { success: true, data: response.data.skills };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+
+export const addUserSkill = async (skillData) => {
+  try {
+    const response = await apiClient.post(`/user/skills`, skillData);
+    return { success: true, data: response.data.skill };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+// Actualizar habilidad de un usuario
+export const updateUserSkill = async (userId, skillId, skillData) => {
+  try {
+    const response = await apiClient.put(`/user/skills/${skillId}`, skillData);
+    return { success: true, data: response.data.skill };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+// Eliminar habilidad de un usuario
+export const deleteUserSkill = async (userId, skillId) => {
+  try {
+    const response = await apiClient.delete(`/user/skills/${skillId}`);
+    return { success: true, data: response.data.skill };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+// Buscar habilidades globales
+export const searchGlobalSkills = async (query, category = null) => {
+  try {
+    const params = new URLSearchParams({ query });
+    if (category) params.append('category', category);
+    
+    const response = await apiClient.get(`/skills/search?${params.toString()}`);
     return { success: true, data: response.data };
   } catch (e) {
     return { success: false, error: e };
   }
 };
 
+// Obtener todas las habilidades globales
+export const getAllGlobalSkills = async () => {
+  try {
+    const response = await apiClient.get(`/skills/global`);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+// Obtener habilidades por categoría
+export const getSkillsByCategory = async (category) => {
+  try {
+    const response = await apiClient.get(`/skills/category/${category}`);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+// Obtener habilidad global por ID
+export const getGlobalSkillById = async (skillId) => {
+  try {
+    const response = await apiClient.get(`/skills/${skillId}`);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+// Crear habilidad global (Admin)
+export const createGlobalSkill = async (skillData) => {
+  try {
+    const response = await apiClient.post(`/skills/global`, skillData);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+// Actualizar habilidad global (Admin)
+export const updateGlobalSkill = async (skillId, skillData) => {
+  try {
+    const response = await apiClient.put(`/skills/${skillId}`, skillData);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+// Eliminar habilidad global (Admin)
+export const deleteGlobalSkill = async (skillId) => {
+  try {
+    const response = await apiClient.delete(`/skills/${skillId}`);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+// Importar habilidades en lote (Admin)
+export const bulkImportSkills = async (skillsData) => {
+  try {
+    const response = await apiClient.post(`/skills/bulk-import`, skillsData);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
 
 // ##### wOffers #####
 export const getWOffers = async (data) => {
@@ -234,49 +337,57 @@ export const getEnterpriseByRecruiter = async (recruiterId) => {
   }
 };
 
-// ##### Skills #####
-export const getAllSkills = async () => {
-  try {
-    const response = await apiClient.get(`http://localhost:3000/gradConnect/v1/skills/all`);
-    return { success: true, data: response.data };
-  } catch (e) {
-    return { success: false, error: e };
-  }
-};
-
-export const getSkillById = async (skillId) => {
-  try {
-    const response = await apiClient.get(`/skills/${skillId}`);
-    return { success: true, data: response.data };
-  } catch (e) {
-    return { success: false, error: e };
-  }
-};
-
-export const deleteSkill = async (skillId) => {
-  try {
-    const response = await apiClient.delete(`/skills/${skillId}`);
-    return { success: true, data: response.data };
-  } catch (e) {
-    return { success: false, error: e };
-  }
-};
-
-export const updateSkill = async (skillId, data) => {
-  try {
-    const response = await apiClient.put(`/skills/${skillId}`, data);
-    return { success: true, data: response.data };
-  } catch (e) {
-    return { success: false, error: e };
-  }
-};
-
-// ##### Applications #####
 export const applyToOffer = async (data) => {
   try {
-    const response = await apiClient.post(`/solitudes/`, data);
-    return { success: true, data: response.data };
-  } catch (e) {
-    return { success: false, error: e };
+    return await apiClient.post(`/wOffer/apply`, data);
+  } catch (error) {
+    return {
+      error: true,
+      message: error?.response?.data?.msg || "Error inesperado",
+    };
+  }
+};
+
+export const getEnterprises = async () => {
+  try {
+    return await apiClient.get(`/enterprise/`);
+  } catch (error) {
+    return {
+      error: true,
+      message: error?.response?.data?.msg || "Error inesperado",
+    };
+  }
+};
+
+export const deleteEnterprise = async (id) => {
+  try {
+    return await apiClient.delete(`/enterprise/${id}`);
+  } catch (error) {
+    return {
+      error: true,
+      message: error?.response?.data?.msg || "Error inesperado",
+    };
+  }
+};
+
+export const updateEnterprise = async (id, data) => {
+  try {
+    return await apiClient.put(`/enterprise/${id}`, data);
+  } catch (error) {
+    return {
+      error: true,
+      message: error?.response?.data?.msg || "Error inesperado",
+    };
+  }
+};
+
+export const createEnterprise = async (data) => {
+  try {
+    return await apiClient.post(`/enterprise/`, data);
+  } catch (error) {
+    return {
+      error: true,
+      message: error?.response?.data?.msg || "Error inesperado",
+    };
   }
 };

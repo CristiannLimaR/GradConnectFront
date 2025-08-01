@@ -6,8 +6,8 @@ import ExperienceSection from "../components/UserProfile/ExperienceSection";
 import EducationSection from "../components/UserProfile/EducationSection";
 import SkillsSection from "../components/UserProfile/SkillsSection";
 import ProfileSummary from "../components/UserProfile/ProfileSummary";
-import { useSkills } from "../shared/hooks/useSkills";
 import { useExperience } from "../shared/hooks/useExperience";
+import { useSkills } from "../shared/hooks/useSkills";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Separator } from "../components/ui/separator";
@@ -19,7 +19,6 @@ export default function UserProfile() {
   console.log(user);
 
   // Hooks personalizados
-  const { loading: skillsLoading, fetchSkills, addSkill, removeSkill } = useSkills();
   const { 
     loading: experienceLoading, 
     experiences, 
@@ -28,6 +27,12 @@ export default function UserProfile() {
     updateExperienceById, 
     removeExperience 
   } = useExperience();
+
+  const { 
+    searchSkills, 
+    fetchAllGlobalSkills,
+    loading: skillsLoading 
+  } = useSkills();
 
   const [showCVDialog, setShowCVDialog] = useState(false);
   const [profile, setProfile] = useState({});
@@ -48,12 +53,6 @@ export default function UserProfile() {
   const [eduForm, setEduForm] = useState({ titulo: '', institucion: '', desde: '', hasta: '', descripcion: '' });
   const [educacion, setEducacion] = useState([]);
 
-  // Estados y handlers para habilidades
-  const [editHabilidades, setEditHabilidades] = useState(false);
-  const [habilidadInput, setHabilidadInput] = useState("");
-  const [habilidades, setHabilidades] = useState([]);
-  const [nivelInput, setNivelInput] = useState("BEGINNER");
-
   useEffect(() => {
     if (user) {
       setProfile({
@@ -69,7 +68,6 @@ export default function UserProfile() {
         descripcion: user.summary || user.description,
       });
       setEducacion(user.educacion || []);
-      setHabilidades(user.habilidades || []);
     }
   }, [user]);
 
@@ -81,18 +79,6 @@ export default function UserProfile() {
 
     loadExperiences();
   }, [user]);
-
-  useEffect(() => {
-    const loadSkills = async () => {
-      if (user?._id) {
-        const skills = await fetchSkills(user._id);
-        if (skills) {
-          setAuthUser({ ...user, habilidades: skills });
-        }
-      }
-    };
-    loadSkills();
-  }, [user?._id]);
 
   const porcentaje = 0;
 
@@ -112,48 +98,30 @@ export default function UserProfile() {
     setAuthUser(updatedUser);
   };
 
+  // Funciones para experiencia
   const handleExpChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setExpForm((prevForm) => ({
-      ...prevForm,
-      [name]: type === "checkbox" ? checked : value,
+    setExpForm(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
   const addExperiencia = async (e) => {
     e.preventDefault();
-    setError(null);
+    if (!expForm.puesto.trim() || !expForm.empresa.trim()) return;
 
-    const dataToSend = {
-      title: expForm.puesto,
-      company: expForm.empresa,
-      startDate: expForm.desde,
-      endDate: expForm.isCurrent ? null : expForm.hasta,
-      description: expForm.descripcion,
+    const experienceData = {
+      puesto: expForm.puesto,
+      empresa: expForm.empresa,
+      desde: expForm.desde,
+      hasta: expForm.hasta,
+      descripcion: expForm.descripcion,
       isCurrent: expForm.isCurrent,
     };
 
-    let result;
-    if (editExpIdx !== null && editExpIdx !== "new") {
-      const experienceId = expForm._id;
-      if (!experienceId) {
-        setError("ID de experiencia no encontrado.");
-        return;
-      }
-      result = await updateExperienceById(experienceId, dataToSend);
-    } else {
-      result = await addExperience(dataToSend);
-    }
-
+    const result = await addExperience(experienceData);
     if (result) {
-      // Actualizar el usuario con las experiencias del estado local del hook
-      const updatedUser = {
-        ...user,
-        experiencia: experiences,
-      };
-      refreshProfile(updatedUser);
-      
-      setEditExpIdx(null);
       setExpForm({
         puesto: "",
         empresa: "",
@@ -163,19 +131,14 @@ export default function UserProfile() {
         isCurrent: false,
         _id: null,
       });
+      setEditExpIdx(null);
     }
   };
 
   const deleteExperiencia = async (experienceId) => {
-    setError(null);
     const success = await removeExperience(experienceId);
     if (success) {
-      // Actualizar el usuario con las experiencias del estado local del hook
-      const updatedUser = {
-        ...user,
-        experiencia: experiences,
-      };
-      refreshProfile(updatedUser);
+      // La experiencia se elimina automáticamente del estado
     }
   };
 
@@ -184,40 +147,7 @@ export default function UserProfile() {
   const deleteEducacion = () => {};
   const handleEduChange = () => {};
 
-  // Funciones para habilidades
-  const addHabilidad = async (e) => {
-    e.preventDefault();
-    if (!habilidadInput.trim()) return;
-    
-    const skillData = {
-      nameSkill: habilidadInput,
-      levelSkill: nivelInput,
-      userId: user._id,
-    };
-    
-    const result = await addSkill(skillData);
-    if (result) {
-      setAuthUser({
-        ...user,
-        habilidades: [...(user.habilidades || []), result],
-      });
-      setHabilidadInput("");
-      setNivelInput("BEGINNER");
-    }
-  };
-
-  const deleteHabilidad = async (idx) => {
-    const skillId = user.habilidades[idx]._id;
-    const success = await removeSkill(skillId);
-    if (success) {
-      setAuthUser({
-        ...user,
-        habilidades: user.habilidades.filter((_, i) => i !== idx),
-      });
-    }
-  };
-
-  const loading = skillsLoading || experienceLoading;
+  const loading = experienceLoading;
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center py-8 px-2 md:px-8 lg:px-0">
@@ -297,17 +227,7 @@ export default function UserProfile() {
               </CardHeader>
               <Separator />
               <CardContent className="pt-4">
-                <SkillsSection
-                  habilidades={habilidades}
-                  editHabilidades={editHabilidades}
-                  setEditHabilidades={setEditHabilidades}
-                  habilidadInput={habilidadInput}
-                  setHabilidadInput={setHabilidadInput}
-                  nivelInput={nivelInput}
-                  setNivelInput={setNivelInput}
-                  addHabilidad={addHabilidad}
-                  deleteHabilidad={deleteHabilidad}
-                />
+                <SkillsSection />
               </CardContent>
             </Card>
           </div>

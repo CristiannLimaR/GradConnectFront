@@ -29,9 +29,7 @@ import {
   Globe,
   Mail as MailIcon,
   Phone as PhoneIcon,
-  Linkedin,
-  Github,
-  Hand,
+  Link2,
 } from "lucide-react";
 import {
   Dialog,
@@ -44,6 +42,7 @@ import { useEnterprise } from "../shared/hooks/useEnterprise";
 import { useSkills } from "../shared/hooks/useSkills.js";
 import useAuthStore from "../shared/stores/authStore.js";
 import { toast } from "sonner";
+import JobSkillSelector from "../components/JobSkillSelector";
 
 const SECCIONES = [
   { key: "perfil", label: "Perfil de la empresa" },
@@ -55,8 +54,8 @@ export default function CompanyDashboard() {
   const { getOffersByEnterprise, saveOffer, editOffer, deleteOffer } =
     useOffer();
   const { user } = useAuthStore();
-  const { getEnterpriseByRecruiter } = useEnterprise();
-
+  const { getEnterpriseByRecruiter, updateEnterprise } = useEnterprise();
+  
   const [offers, setOffers] = useState([]);
   const [enterprise, setEnterprise] = useState(null);
 
@@ -88,8 +87,13 @@ export default function CompanyDashboard() {
     skills: [],
   });
 
+  
+
+  const [nuevaSkill, setNuevaSkill] = useState("");
+
   // ############## FAKE DATA ##############
-  // Simulación de datos de empresa y ofertas (solo para visualización, no para enviar al backend)
+  // Simulación de datos de empresa y ofertas
+
   const empresa = {
     nombre: "Mi Empresa",
     descripcion: "Descripción de la empresa...",
@@ -330,6 +334,36 @@ export default function CompanyDashboard() {
     cargarSkills();
   }, []);
 
+  const [formData, setFormData] = useState({
+    name: enterprise?.name || "",
+    description: enterprise?.description || "",
+    email: enterprise?.email || "",
+    contactNumber: enterprise?.contactNumber || "",
+    address: enterprise?.address || "",
+    socialMediaLinks: enterprise?.socialMediaLinks || "",
+    webSite: enterprise?.webSite || "",
+    size: enterprise?.size || "",
+    industry: enterprise?.industry || "",
+    type: enterprise?.type || "",
+  });
+
+  useEffect(() => {
+  if (enterprise) {
+    setFormData({
+      name: enterprise.name || "",
+      description: enterprise.description || "",
+      email: enterprise.email || "",
+      contactNumber: enterprise.contactNumber || "",
+      address: enterprise.address || "",
+      socialMediaLinks: enterprise?.socialMediaLinks || "",
+      webSite: enterprise.webSite || "",
+      size: enterprise?.size || "",
+      industry: enterprise?.industry || "",
+      type: enterprise?.type || "",
+    });
+  }
+}, [enterprise]);
+
   // Cálculo de estadísticas
   const estadisticas = {
     totalOfertas: offers.length,
@@ -357,7 +391,21 @@ export default function CompanyDashboard() {
     setCandidatosDialog(true);
   };
 
-  const abrirFormularioEdicion = (oferta) => {
+  const abrirFormularioEdicion = async (oferta) => {
+    // Convertir skill IDs a objetos skill completos
+    const skillObjects = await Promise.all(
+      (oferta.skills || []).map(async (skill) => {
+        const skillId = typeof skill === "string" ? skill : skill._id;
+        try {
+          const skillData = await getSkillById(skillId);
+          return skillData || { _id: skillId, nameSkill: "Skill desconocida" };
+        } catch (error) {
+          console.error("Error loading skill:", skillId, error);
+          return { _id: skillId, nameSkill: "Skill desconocida" };
+        }
+      })
+    );
+
     setFormOferta({
       title: oferta.title,
       description: oferta.description,
@@ -368,7 +416,7 @@ export default function CompanyDashboard() {
       ubication: oferta.ubication,
       requirements: oferta.requirements.join("\n"), // convertir a string para editar
       closingDate: oferta.closingDate?.substring(0, 10), // YYYY-MM-DD
-      skills: oferta.skills || [],
+      skills: skillObjects,
     });
     setEditandoOferta(true);
     setCreandoOferta(false);
@@ -396,7 +444,14 @@ export default function CompanyDashboard() {
   const eliminarSkill = (skill) => {
     setFormOferta({
       ...formOferta,
-      skills: formOferta.skills.filter((s) => s !== skill),
+      skills: formOferta.skills.filter((s) => s._id !== skill._id),
+    });
+  };
+
+  const agregarSkill = (skill) => {
+    setFormOferta({
+      ...formOferta,
+      skills: [...formOferta.skills, skill],
     });
   };
 
@@ -456,6 +511,8 @@ export default function CompanyDashboard() {
         .split("\n")
         .filter((req) => req.trim() !== ""), // Filtrar requisitos vacíos
       salary: Number(formOferta.salary),
+      // Extraer solo los IDs de las skills para enviar al backend
+      skills: formOferta.skills.map(skill => skill._id || skill),
     };
 
     delete datos.company;
@@ -527,6 +584,20 @@ export default function CompanyDashboard() {
     }
   }, [location.search]);
 
+
+  if (!enterprise) {
+    console.log("Cargando datos de la empresa...");
+    return <div>Cargando datos de la empresa...</div>;
+  }
+
+  const fechaLarga = new Date(enterprise.createdAt).toLocaleDateString(
+    "en-EN",
+    {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    }
+  );
   return (
     <div className="min-h-screen flex bg-gray-50">
       {/* Menú lateral */}
@@ -722,10 +793,10 @@ export default function CompanyDashboard() {
                       <div className="flex justify-between items-start mb-6">
                         <div>
                           <h2 className="text-2xl font-bold mb-2">
-                            {enterprise?.name || empresa.nombre}
+                            {enterprise.name}
                           </h2>
                           <p className="text-gray-600">
-                            {enterprise?.description || empresa.descripcion}
+                            {enterprise.description}
                           </p>
                         </div>
                         <Button
@@ -748,7 +819,7 @@ export default function CompanyDashboard() {
                                 Email
                               </p>
                               <p className="text-gray-900">
-                                {enterprise?.email || empresa.email}
+                                {enterprise.email}
                               </p>
                             </div>
                           </div>
@@ -762,7 +833,7 @@ export default function CompanyDashboard() {
                                 Teléfono
                               </p>
                               <p className="text-gray-900">
-                                {enterprise?.contactNumber || empresa.telefono}
+                                {enterprise.contactNumber || "No especificado"}
                               </p>
                             </div>
                           </div>
@@ -775,8 +846,8 @@ export default function CompanyDashboard() {
                               <p className="text-sm font-medium text-gray-600">
                                 Ubicación
                               </p>
-                              <p className="text-gray-900">
-                                {enterprise?.address || empresa.ubicacion}
+                              <p className="text-gray-900 text truncate overflow-hidden whitespace-nowrap max-w-[200px]">
+                                {enterprise.address || "No especificado"}
                               </p>
                             </div>
                           </div>
@@ -785,36 +856,28 @@ export default function CompanyDashboard() {
                         <div className="space-y-4">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                              <Linkedin className="w-5 h-5 text-orange-600" />
+                              <User className="w-5 h-5 text-orange-600" />
                             </div>
                             <div>
                               <p className="text-sm font-medium text-gray-600">
-                                LinkedIn
+                                Reclutador 
                               </p>
                               <p className="text-gray-900">
-                                {enterprise?.socialMediaLinks?.find((link) =>
-                                  link.includes("linkedin")
-                                ) ||
-                                  empresa.linkedin ||
-                                  "No especificado"}
+                                {enterprise.recruiters[0].firstName +" "+ enterprise.recruiters[0].lastName || "No especificado" }
                               </p>
                             </div>
                           </div>
 
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                              <Github className="w-5 h-5 text-gray-600" />
+                              <Link2   className="w-5 h-5 text-gray-600" />
                             </div>
                             <div>
                               <p className="text-sm font-medium text-gray-600">
-                                GitHub
+                                Social Media
                               </p>
-                              <p className="text-gray-900">
-                                {enterprise?.socialMediaLinks?.find((link) =>
-                                  link.includes("github")
-                                ) ||
-                                  empresa.github ||
-                                  "No especificado"}
+                              <p className="text-gray-900 text truncate overflow-hidden whitespace-nowrap max-w-[200px]">
+                                {enterprise?.socialMediaLinks[0] || "Sin redes"}
                               </p>
                             </div>
                           </div>
@@ -828,7 +891,7 @@ export default function CompanyDashboard() {
                                 Sitio web
                               </p>
                               <p className="text-gray-900">
-                                {enterprise?.webSite || "www.miempresa.com"}
+                                {enterprise.webSite}
                               </p>
                             </div>
                           </div>
@@ -849,78 +912,182 @@ export default function CompanyDashboard() {
                           Cancelar
                         </Button>
                       </div>
-                      <form className="space-y-4">
+                      <form
+                        className="space-y-4"
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          const result = await updateEnterprise(
+                            enterprise.id,
+                            formData
+                          );
+                          const rechargeEnterprise = await getEnterpriseByRecruiter(
+                            user._id || user.id
+                          );
+                          setEnterprise(rechargeEnterprise.enterprise);
+                          if (!result.error) {
+                            setEditandoPerfil(false); // oculta el formulario si todo salió bien
+                          }
+                        }}
+                      >
                         <div>
-                          <Label>Nombre de la empresa</Label>
+                          <Label className="mb-2">Nombre de la empresa</Label>
                           <Input
                             type="text"
-                            placeholder="Nombre de la empresa"
-                            defaultValue={enterprise?.name || empresa.nombre}
+                            placeholder="nombre de la empresa"
+                            value={formData.name}
+                            onChange={(e) =>
+                              setFormData({ ...formData, name: e.target.value })
+                            }
                           />
                         </div>
                         <div>
-                          <Label>Descripción</Label>
+                          <Label className="mb-2">Descripción</Label>
                           <Textarea
                             placeholder="Describe tu empresa..."
-                            defaultValue={
-                              enterprise?.description || empresa.descripcion
+                            value={formData.description}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                description: e.target.value,
+                              })
                             }
                           />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <Label>Email</Label>
+                            <Label className="mb-2">Email</Label>
                             <Input
                               type="email"
                               placeholder="Correo de contacto"
-                              defaultValue={enterprise?.email || empresa.email}
+                              value={formData.email}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  email: e.target.value,
+                                })
+                              }
                             />
                           </div>
                           <div>
-                            <Label>Teléfono</Label>
+                            <Label className="mb-2">Teléfono</Label>
                             <Input
                               type="tel"
                               placeholder="Teléfono"
-                              defaultValue={
-                                enterprise?.contactNumber || empresa.telefono
+                              value={formData.contactNumber}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  contactNumber: e.target.value,
+                                })
                               }
                             />
                           </div>
-                        </div>
-                        <div>
-                          <Label>Ubicación</Label>
-                          <Input
-                            type="text"
-                            placeholder="Ubicación"
-                            defaultValue={
-                              enterprise?.address || empresa.ubicacion
-                            }
-                          />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <Label>LinkedIn</Label>
+                            <Label className="mb-2">Tamaño</Label>
+                              <select
+                                className="select select-bordered text-white"
+                                value={formData.size}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    size: e.target.value,
+                                  })
+                                }
+                              >
+                                <option value="">Seleccione un tamaño</option>
+                                <option value="Small">Small</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Large">Large</option>
+                              </select>
+                          </div>
+                          <div>
+                            <Label className="mb-2">Tipo</Label>
+                              <select
+                                className="select select-bordered text-white"
+                                value={formData.type}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    type: e.target.value,
+                                  })
+                                }
+                              >
+                                <option value="">Seleccione un tipo</option>
+                                <option value="Startup">Startup</option>
+                                <option value="SME">SME</option>
+                                <option value="Corporation">Corporation</option>
+                                <option value="Non-Profit">Non-Profit</option>
+                              </select>
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="mb-2">Ubicación</Label>
+                          <Input
+                            type="text"
+                            placeholder="Ubicación"
+                            value={formData.address}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                address: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                        <div>
+                      <Label className="mb-2">Redes Sociales *</Label>
+                      <Textarea
+                        placeholder="Lista de redes sociales"
+                        value={formData.socialMediaLinks}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            socialMediaLinks: e.target.value,
+                          })
+                        }
+                        rows={3}
+                      />
+                    </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label className="mb-2">Sitio web</Label>
                             <Input
                               type="url"
-                              placeholder="Enlace a LinkedIn"
-                              defaultValue={
-                                enterprise?.socialMediaLinks?.find((link) =>
-                                  link.includes("linkedin")
-                                ) || empresa.linkedin
+                              placeholder="Enlace al sitio web"
+                              value={formData.webSite}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  webSite: e.target.value,
+                                })
                               }
                             />
                           </div>
                           <div>
-                            <Label>GitHub</Label>
-                            <Input
-                              type="url"
-                              placeholder="Enlace a GitHub"
-                              defaultValue={
-                                enterprise?.socialMediaLinks?.find((link) =>
-                                  link.includes("github")
-                                ) || empresa.github
-                              }
-                            />
+                            <Label className="mb-2">Industria</Label>
+                              <select
+                                className="select select-bordered text-white"
+                                value={formData.industry}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    industry: e.target.value,
+                                  })
+                                }
+                              >
+                                <option value="">Seleccione una indistria</option>
+                                <option value="Technology">Technology</option>
+                                <option value="Health">Health</option>
+                                <option value="Education">Education</option>
+                                <option value="Finance">Finance</option>
+                                <option value="Retail">Retail</option>
+                                <option value="Manufacturing">Manufacturing</option>
+                                <option value="Hospitality">Hospitality</option>
+                                <option value="Construction">Construction</option>
+                                <option value="Other">Other</option>
+                              </select>
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -948,29 +1115,19 @@ export default function CompanyDashboard() {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Fundada</span>
-                      <span className="font-medium">
-                        {enterprise?.createdAt
-                          ? new Date(enterprise.createdAt).getFullYear()
-                          : "N/A"}
-                      </span>
+                      <span className="font-medium">{fechaLarga}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Tamaño</span>
-                      <span className="font-medium">
-                        {enterprise?.size || "N/A"}
-                      </span>
+                      <span className="font-medium">{enterprise.size}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Industria</span>
-                      <span className="font-medium">
-                        {enterprise?.industry || "N/A"}
-                      </span>
+                      <span className="font-medium">{enterprise.industry}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Tipo</span>
-                      <span className="font-medium">
-                        {enterprise?.type || "N/A"}
-                      </span>
+                      <span className="font-medium">{enterprise.type}</span>
                     </div>
                   </div>
                 </Card>
@@ -1459,63 +1616,12 @@ export default function CompanyDashboard() {
                     </div>
 
                     <div>
-                      <Label className="mb-2">Habilidades técnicas</Label>
-                      <div>
-                        <Label className="mb-2">
-                          Seleccionar habilidades técnicas
-                        </Label>
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {allSkills.map((skill) => (
-                            <button
-                              key={skill._id}
-                              type="button"
-                              className={`px-3 py-1 rounded-full text-sm border ${
-                                formOferta.skills.includes(skill._id)
-                                  ? "bg-blue-500 text-white"
-                                  : "bg-gray-200 text-gray-700"
-                              }`}
-                              onClick={() => {
-                                if (!formOferta.skills.includes(skill._id)) {
-                                  setFormOferta({
-                                    ...formOferta,
-                                    skills: [...formOferta.skills, skill._id],
-                                  });
-                                }
-                              }}
-                            >
-                              {skill.nameSkill}
-                            </button>
-                          ))}
-                        </div>
-
-                        {/* Muestra las skills seleccionadas con opción de eliminar */}
-                        {formOferta.skills.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {formOferta.skills.map((skillId) => {
-                              const skill = allSkills.find(
-                                (s) => s._id === skillId
-                              );
-                              return (
-                                <div
-                                  key={skillId}
-                                  className="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
-                                >
-                                  <span>
-                                    {skill?.nameSkill || "Skill desconocida"}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => eliminarSkill(skillId)}
-                                    className="text-blue-600 hover:text-blue-800"
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </button>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
+                      <JobSkillSelector
+                        selectedSkills={formOferta.skills}
+                        onSkillAdded={agregarSkill}
+                        onSkillRemoved={eliminarSkill}
+                        className=""
+                      />
                     </div>
 
                     <div className="flex gap-3 pt-4">

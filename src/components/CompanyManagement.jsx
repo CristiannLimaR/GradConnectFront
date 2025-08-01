@@ -1,93 +1,54 @@
-import React, { useState } from 'react';
+import  { useEffect, useState } from 'react';
 import { Plus, Download } from 'lucide-react';
 import { DataTable } from './data-table';
 import { companyColumns } from './columns/company-columns';
+import CompanyModal from './CompanyModal';
+import { useEnterprise } from '../shared/hooks/useEnterprise';
 
 export default function CompanyManagement() {
-  const [companies, setCompanies] = useState([
-    {
-      id: 1,
-      name: 'TechCorp Solutions',
-      description: 'Empresa líder en desarrollo de software y soluciones tecnológicas innovadoras para el sector empresarial',
-      website: 'https://techcorp.com',
-      location: 'Madrid, España',
-      sector: 'Tecnología',
-      adminUser: {
-        firstName: 'Ana',
-        lastName: 'García',
-        email: 'ana.garcia@techcorp.com'
-      },
-      email: 'contact@techcorp.com',
-      status: 'verificada'
-    },
-    {
-      id: 2,
-      name: 'InnovateLab',
-      description: 'Startup innovadora especializada en inteligencia artificial y machine learning para aplicaciones empresariales',
-      website: 'https://innovatelab.com',
-      location: 'Barcelona, España',
-      sector: 'Inteligencia Artificial',
-      adminUser: {
-        firstName: 'Carlos',
-        lastName: 'Martínez',
-        email: 'carlos.martinez@innovatelab.com'
-      },
-      email: 'hr@innovatelab.com',
-      status: 'pendiente'
-    },
-    {
-      id: 3,
-      name: 'DataCorp International',
-      description: 'Consultoría especializada en análisis de datos, big data y business intelligence para empresas globales',
-      website: 'https://datacorp.com',
-      location: 'Valencia, España',
-      sector: 'Consultoría',
-      adminUser: {
-        firstName: 'María',
-        lastName: 'López',
-        email: 'maria.lopez@datacorp.com'
-      },
-      email: 'info@datacorp.com',
-      status: 'verificada'
-    },
-    {
-      id: 4,
-      name: 'GreenTech Solutions',
-      description: 'Soluciones sostenibles y tecnologías verdes para un futuro más limpio y eficiente energéticamente',
-      website: 'https://greentech.com',
-      location: 'Sevilla, España',
-      sector: 'Energía Renovable',
-      adminUser: {
-        firstName: 'David',
-        lastName: 'Fernández',
-        email: 'david.fernandez@greentech.com'
-      },
-      email: 'info@greentech.com',
-      status: 'suspendida'
-    },
-    {
-      id: 5,
-      name: 'HealthCare Plus',
-      description: 'Servicios de salud integrales y tecnología médica avanzada para mejorar la calidad de vida de los pacientes',
-      website: 'https://healthcare.com',
-      location: 'Bilbao, España',
-      sector: 'Salud',
-      adminUser: {
-        firstName: 'Laura',
-        lastName: 'Rodríguez',
-        email: 'laura.rodriguez@healthcare.com'
-      },
-      email: 'contact@healthcare.com',
-      status: 'pendiente'
-    }
-  ]);
+  const { enterprise, getEnterprises, deleteEnterprise } = useEnterprise();
+  const [selectedCompany, setSelectedCompany] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+
+  const handleViewProfile = (company) => {
+    setSelectedCompany(company);
+    setIsModalOpen(true);
+  };
+
+  useEffect(() => {
+    getEnterprises();
+  }, []);
+
+  const enterprises = enterprise?.enterprises || []; 
+
+  const companies = enterprises.map((company) => ({
+    id: company.id,
+    name: company.name,
+    description: company.description,
+    website: company.webSite,
+    sector: company.industry,
+    location: company.address,
+    email: company.email,
+    status: company.status ? 'Activa' : 'Inactiva',
+    adminUser: company.recruiters?.length
+    ? {
+        firstName: company.recruiters[0].firstName,
+        lastName: company.recruiters[0].lastName,
+        email: company.recruiters[0].email,
+      }
+    : {firstName: 'N/A', lastName: 'N/A', email: 'N/A'},
+    contactNumber: company.contactNumber || 'No disponible',
+  }));
 
   return (
     <div className="space-y-6">
       {/* Header y filtros */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Gestión de Empresas</h2>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Gestión de Empresas
+          </h2>
           <button className="mt-4 sm:mt-0 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
             <Plus className="w-4 h-4 mr-2" />
             Nueva Empresa
@@ -105,13 +66,28 @@ export default function CompanyManagement() {
 
       {/* Tabla de empresas con DataTable */}
       <div className="bg-white rounded-lg shadow">
-        <DataTable 
-          data={companies} 
-          columns={companyColumns} 
-          searchKey="name"
+        <DataTable
+          data={companies}
+          columns={companyColumns({
+            deleteEnterprise,
+            onViewProfile: handleViewProfile
+          })}
+          searchKey={["name", "email", "adminUser.firstName"]}
           searchPlaceholder="Buscar empresas por nombre, descripción o sector..."
+          columnVisibility={{
+            status: false,
+            location: false,
+          }}
         />
       </div>
+      <CompanyModal
+      company={selectedCompany}
+      isOpen={isModalOpen}
+      onClose={() => {
+        setIsModalOpen(false);
+        setSelectedCompany(null);
+      }}
+    />
     </div>
   );
 } 

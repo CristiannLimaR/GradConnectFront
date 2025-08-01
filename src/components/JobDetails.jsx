@@ -74,25 +74,34 @@ export default function JobDetails({ job }) {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 w-[900px] h-[1000px] overflow-auto">
       <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">{job.title}</h1>
-          <div className="flex items-center space-x-4 text-gray-600 mb-4">
-            <span className="flex items-center">
-              <Building className="w-4 h-4 mr-1" />
-              {job.company}
-            </span>
-            <span className="flex items-center">
-              <MapPin className="w-4 h-4 mr-1" />
-              {job.location}
-            </span>
-            <span className="flex items-center">
-              <Clock className="w-4 h-4 mr-1" />
-              {job.timePosted}
-            </span>
-            <span className="flex items-center">
-              <Users className="w-4 h-4 mr-1" />
-              {job.applicants}
-            </span>
+        <div className="flex items-start space-x-4">
+          {job.enterprise?.logo && (
+            <img 
+              src={job.enterprise.logo} 
+              alt={`${job.enterprise.name} logo`}
+              className="w-16 h-16 rounded-lg object-cover flex-shrink-0 mt-1"
+            />
+          )}
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">{job.title}</h1>
+            <div className="flex items-center space-x-4 text-gray-600 mb-4">
+              <span className="flex items-center">
+                <Building className="w-4 h-4 mr-1" />
+                {job.enterprise?.name || 'No especificado'}
+              </span>
+              <span className="flex items-center">
+                <MapPin className="w-4 h-4 mr-1" />
+                {job.ubication} - {job.location}
+              </span>
+              <span className="flex items-center">
+                <Clock className="w-4 h-4 mr-1" />
+                {new Date(job.createdAt).toLocaleDateString('es-ES')}
+              </span>
+              <span className="flex items-center">
+                <Users className="w-4 h-4 mr-1" />
+                {job.applicationsCount || 0} aplicaciones
+              </span>
+            </div>
           </div>
         </div>
         <button className="text-gray-400 hover:text-gray-600">
@@ -112,11 +121,11 @@ export default function JobDetails({ job }) {
       <div className="flex items-center space-x-4 mb-6">
         <span className="flex items-center text-gray-600">
           <Building className="w-4 h-4 mr-1" />
-          {job.type} • {job.level}
+          {job.modality}
         </span>
         <span className="flex items-center text-gray-600">
-          <Users className="w-4 h-4 mr-1" />
-          {job.employees} • Staffing and Recruiting
+          <Clock className="w-4 h-4 mr-1" />
+          Cierre: {new Date(job.closingDate).toLocaleDateString('es-ES')}
         </span>
       </div>
 
@@ -187,17 +196,29 @@ export default function JobDetails({ job }) {
         <p className="text-gray-600 mb-6 leading-relaxed">
           {job.description}
         </p>
-        {job.responsibilities && (
+        {job.requirements && job.requirements.length > 0 && (
           <>
-            <h3 className="text-md font-semibold text-gray-900 mb-3">Tus responsabilidades incluirán</h3>
-            <ul className="space-y-2 text-gray-600">
-              {job.responsibilities.map((responsibility, index) => (
+            <h3 className="text-md font-semibold text-gray-900 mb-3">Requisitos</h3>
+            <ul className="space-y-2 text-gray-600 mb-6">
+              {job.requirements.map((requirement, index) => (
                 <li key={index} className="flex items-start">
                   <span className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                  {responsibility}
+                  {requirement}
                 </li>
               ))}
             </ul>
+          </>
+        )}
+        {job.skills && job.skills.length > 0 && (
+          <>
+            <h3 className="text-md font-semibold text-gray-900 mb-3">Habilidades requeridas</h3>
+            <div className="flex flex-wrap gap-2 mb-6">
+              {job.skills.map((skillId, index) => (
+                <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                  {skillId.nameSkill}
+                </span>
+              ))}
+            </div>
           </>
         )}
       </div>

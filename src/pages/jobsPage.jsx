@@ -10,6 +10,7 @@ export default function JobsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [location, setLocation] = useState("");
   const { offers, getWOffers } = useOffer();
+  console.log(offers);
 
   useEffect(() => {
     getWOffers();

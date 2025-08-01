@@ -40,11 +40,17 @@ export function DataTable({
   showColumnToggle = true,
   showPagination = true,
   showRowSelection = false,
+  columnVisibility: initialColumnVisibility = {},
 }) {
   const [sorting, setSorting] = React.useState([])
   const [columnFilters, setColumnFilters] = React.useState([])
-  const [columnVisibility, setColumnVisibility] = React.useState({})
+  const [columnVisibility, setColumnVisibility] = React.useState(initialColumnVisibility)
   const [rowSelection, setRowSelection] = React.useState({})
+  const [globalFilter, setGlobalFilter] = React.useState("")
+
+  const searchKeys = React.useMemo(() => {
+    return Array.isArray(searchKey) ? searchKey : [searchKey];
+  }, [searchKey]);
 
   const table = useReactTable({
     data,
@@ -55,6 +61,16 @@ export function DataTable({
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    globalFilterFn: (row, columnId, filterValue) => {
+      return searchKeys.some((key) => {
+        const value = key
+          .split(".")
+          .reduce((obj, part) => obj?.[part], row.original);
+        return String(value ?? "")
+          .toLowerCase()
+          .includes(filterValue.toLowerCase());
+      });
+    },
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     state: {
@@ -62,8 +78,10 @@ export function DataTable({
       columnFilters,
       columnVisibility,
       rowSelection,
+      globalFilter,
     },
-  })
+    onGlobalFilterChange: setGlobalFilter,
+  });
 
   return (
     <div className="w-full">
@@ -71,10 +89,8 @@ export function DataTable({
         {searchKey && (
           <Input
             placeholder={searchPlaceholder || "Buscar..."}
-            value={(table.getColumn(searchKey)?.getFilterValue()) ?? ""}
-            onChange={(event) =>
-              table.getColumn(searchKey)?.setFilterValue(event.target.value)
-            }
+            value={globalFilter}
+            onChange={(e) => setGlobalFilter(e.target.value)}
             className="max-w-sm"
           />
         )}
