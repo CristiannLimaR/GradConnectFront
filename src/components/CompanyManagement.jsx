@@ -4,11 +4,13 @@ import { DataTable } from './data-table';
 import { companyColumns } from './columns/company-columns';
 import CompanyModal from './CompanyModal';
 import { useEnterprise } from '../shared/hooks/useEnterprise';
+import EnterpriseForm from './EnterpriseForm';
 
 export default function CompanyManagement() {
-  const { enterprise, getEnterprises, deleteEnterprise } = useEnterprise();
+  const { enterprise, getEnterprises, deleteEnterprise, saveEnterprise } = useEnterprise();
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
 
   const handleViewProfile = (company) => {
@@ -49,7 +51,10 @@ export default function CompanyManagement() {
           <h2 className="text-2xl font-bold text-gray-900">
             Gestión de Empresas
           </h2>
-          <button className="mt-4 sm:mt-0 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+          <button
+            onClick={() => setIsCreating(true)}
+            className="mt-4 sm:mt-0 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+          >
             <Plus className="w-4 h-4 mr-2" />
             Nueva Empresa
           </button>
@@ -63,14 +68,26 @@ export default function CompanyManagement() {
           </button>
         </div>
       </div>
-
+      {isCreating && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <EnterpriseForm
+            title="Crear nueva empresa"
+            onCancel={() => setIsCreating(false)}
+            onSubmit={async (data) => {
+              await saveEnterprise(data);
+              await getEnterprises();
+              setIsCreating(false);
+            }}
+          />
+        </div>
+      )}
       {/* Tabla de empresas con DataTable */}
       <div className="bg-white rounded-lg shadow">
         <DataTable
           data={companies}
           columns={companyColumns({
             deleteEnterprise,
-            onViewProfile: handleViewProfile
+            onViewProfile: handleViewProfile,
           })}
           searchKey={["name", "email", "adminUser.firstName"]}
           searchPlaceholder="Buscar empresas por nombre, descripción o sector..."
@@ -80,14 +97,15 @@ export default function CompanyManagement() {
           }}
         />
       </div>
+
       <CompanyModal
-      company={selectedCompany}
-      isOpen={isModalOpen}
-      onClose={() => {
-        setIsModalOpen(false);
-        setSelectedCompany(null);
-      }}
-    />
+        company={selectedCompany}
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedCompany(null);
+        }}
+      />
     </div>
   );
 } 

@@ -182,3 +182,14 @@ export const updateEnterprise = async (id, data) => {
     }
   }
 }
+
+export const saveEnterprise = async (data) => {
+  try {
+    return await apiClient.post(`/enterprise/`, data);
+  } catch (error) {
+    return {
+      error: true,
+      error
+    }
+  }
+}

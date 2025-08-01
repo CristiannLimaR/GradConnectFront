@@ -3,6 +3,7 @@ import {
   getEnterprises as getEnterpriseService,
   deleteEnterprise as deleteEnterpriseService,
   updateEnterprise as updateEnterpriseService,
+  saveEnterprise as saveEnterpriseService,
 } from "../../service/api";
 
 import { useState } from "react";
@@ -96,11 +97,35 @@ export const useEnterprise = () => {
     }
   }
 
+  const saveEnterprise = async (data) => {
+    try {
+      const response = await saveEnterpriseService(data);
+
+      if (response.error) {
+        toast.error("Error al guardar la empresa", {
+          description:
+            response.error?.response?.data || "Error al guardar la empresa",
+          duration: 2000,
+        });
+        return { error: true };
+      }
+      toast.success("Empresa guardada correctamente");
+      return response.data;
+    } catch (error) {
+      toast.error("Error al guardar la empresa", {
+        description: error?.response?.data || "Error al guardar la empresa",
+        duration: 2000,
+      });
+      return { error: true };
+    }
+  };
+
   return {
     getEnterpriseByRecruiter,
     getEnterprises,
     deleteEnterprise,
     updateEnterprise,
+    saveEnterprise,
     enterprise,
   };
 };
