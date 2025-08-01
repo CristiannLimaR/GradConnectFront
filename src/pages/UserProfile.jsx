@@ -16,6 +16,7 @@ import { BadgeCheck, GraduationCap, Briefcase, Star, UserCog } from "lucide-reac
 export default function UserProfile() {
   const user = useAuthStore((state) => state.user);
   const setAuthUser = useAuthStore((state) => state.updateUser);
+  console.log(user);
 
   // Hooks personalizados
   const { loading: skillsLoading, fetchSkills, addSkill, removeSkill } = useSkills();

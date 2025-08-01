@@ -151,6 +151,7 @@ export const getSkills = async (userId) => {
   }
 };
 
+
 // ##### wOffers #####
 export const getWOffers = async (data) => {
   try {
@@ -264,6 +265,16 @@ export const deleteSkill = async (skillId) => {
 export const updateSkill = async (skillId, data) => {
   try {
     const response = await apiClient.put(`/skills/${skillId}`, data);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+// ##### Applications #####
+export const applyToOffer = async (data) => {
+  try {
+    const response = await apiClient.post(`/solitudes/`, data);
     return { success: true, data: response.data };
   } catch (e) {
     return { success: false, error: e };
