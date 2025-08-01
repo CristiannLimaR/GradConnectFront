@@ -93,7 +93,7 @@ export const jobColumns = [
     header: "Modalidad",
     cell: ({ row }) => {
       const location = row.getValue("location")
-      const locationLabels = {
+      const locationLabels = { // MODIFICAR
         'Remoto': 'Remoto',
         'Presencial': 'Presencial',
         'Hibrido': 'Híbrido'
@@ -173,7 +173,9 @@ export const jobColumns = [
       )
     },
     cell: ({ row }) => {
-      const applications = row.getValue("applications")
+      const applications = row.original.applications
+      
+      console.log('row.original.applications:', row.original.applications)
       return (
         <div className="text-sm text-center font-medium">
           {applications?.length || 0}

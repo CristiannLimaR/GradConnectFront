@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { saveSkills, getSkills, deleteSkill } from "../../service/api";
+import { saveSkills, getSkills, deleteSkill, getAllSkills as getAllSkillsReq, getSkillById as getSkillByIdReq } from "../../service/api";
 import { toast } from "sonner";
 
 export const useSkills = () => {
@@ -10,13 +10,11 @@ export const useSkills = () => {
     try {
       const resp = await getSkills(userId);
       setLoading(false);
-      
       if (resp.error) {
         const msg = resp.e?.response?.data?.msg || "Error cargando habilidades";
         toast.error(msg);
         return null;
       }
-      
       return resp.data;
     } catch (error) {
       setLoading(false);
@@ -25,19 +23,37 @@ export const useSkills = () => {
     }
   };
 
+  const getSkillById = async (skillId) => {
+    setLoading(true);
+    try {
+      const resp = await getSkillByIdReq(skillId);
+      setLoading(false);
+
+      if (resp.error) {
+        const msg = resp.e?.response?.data?.msg || "Error obteniendo habilidad";
+        toast.error(msg);
+        return null;
+      }
+
+      return resp.data;
+    } catch (error) {
+      setLoading(false);
+      toast.error("Error inesperado obteniendo habilidad");
+      return null;
+    }
+  }
+
   const addSkill = async (skillData) => {
     console.log(skillData);
     setLoading(true);
     try {
       const resp = await saveSkills(skillData);
       setLoading(false);
-      
       if (resp.error) {
         const msg = resp.e?.response?.data?.msg || "Error guardando habilidad";
         toast.error(msg);
         return null;
       }
-      
       toast.success("Habilidad agregada");
       return resp.data;
     } catch (error) {
@@ -52,13 +68,11 @@ export const useSkills = () => {
     try {
       const resp = await deleteSkill(skillId);
       setLoading(false);
-      
       if (resp.error) {
         const msg = resp.e?.response?.data?.msg || "Error eliminando habilidad";
         toast.error(msg);
         return false;
       }
-      
       toast.success("Habilidad eliminada");
       return true;
     } catch (error) {
@@ -68,5 +82,23 @@ export const useSkills = () => {
     }
   };
 
-  return { loading, fetchSkills, addSkill, removeSkill };
-}; 
+  const getAllSkills = async (params) => {
+    setLoading(true);
+    try {
+      const resp = await getAllSkillsReq()
+      setLoading(false);
+      if (resp.error) {
+        const msg = resp.e?.response?.data?.msg || "Error cargando habilidades";
+        toast.error(msg);
+        return null;
+      }
+      return resp.data;
+    } catch (error) {
+      setLoading(false);
+      toast.error("Error inesperado cargando habilidades");
+      return false;
+    }
+  };
+
+  return { loading, fetchSkills, addSkill, removeSkill, getAllSkills, getSkillById };
+};
