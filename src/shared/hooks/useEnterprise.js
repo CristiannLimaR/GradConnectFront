@@ -3,6 +3,7 @@ import {
   getEnterprises as getEnterpriseService,
   deleteEnterprise as deleteEnterpriseService,
   updateEnterprise as updateEnterpriseService,
+  createEnterprise as createEnterpriseService,
 } from "../../service/api";
 
 import { useState } from "react";
@@ -74,26 +75,37 @@ export const useEnterprise = () => {
   };
 
   const updateEnterprise = async (id, data) => {
-    try {
-      const response = await updateEnterpriseService(id, data);
+    const response = await updateEnterpriseService(id, data);
 
-      if (response.error) {
-        toast.error("Error al actualizar la empresa", {
-          description:
-            response.error?.response?.data || "Error al actualizar la empresa",
-          duration: 2000,
-        });
-        return { error: true };
-      }
-      toast.success("Empresa actualizada correctamente");
-      return response.data;
-    } catch (error) {
+    if (response.error) {
       toast.error("Error al actualizar la empresa", {
-        description: error?.response?.data || "Error al actualizar la empresa",
+        description: response.message || "Error al actualizar la empresa",
         duration: 2000,
       });
       return { error: true };
     }
+    
+    toast.success("Empresa actualizada correctamente");
+    // Refresh the enterprise list after successful update
+    await getEnterprises();
+    return response.data;
+  }
+
+  const saveEnterprise = async (data) => {
+    const response = await createEnterpriseService(data);
+
+    if (response.error) {
+      toast.error("Error al crear la empresa", {
+        description: response.message || "Error al crear la empresa",
+        duration: 2000,
+      });
+      return { error: true };
+    }
+    
+    toast.success("Empresa creada correctamente");
+    // Optionally refresh the enterprise list
+    await getEnterprises();
+    return response.data;
   }
 
   return {
@@ -101,6 +113,7 @@ export const useEnterprise = () => {
     getEnterprises,
     deleteEnterprise,
     updateEnterprise,
+    saveEnterprise,
     enterprise,
   };
 };

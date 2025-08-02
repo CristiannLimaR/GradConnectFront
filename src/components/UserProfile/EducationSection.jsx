@@ -7,7 +7,6 @@ import { Label } from "../ui/label";
 import { Dialog, DialogTrigger, DialogContent, DialogTitle } from "../ui/dialog";
 
 export default function EducationSection({ educacion, eduForm, editEduIdx, setEditEduIdx, setEduForm, addEducacion, deleteEducacion, handleEduChange }) {
-  // Elimina openDialog y dialogMode
   return (
     <section className="w-full py-0 border-t-0">
       <div className="flex items-center justify-between mb-4">
@@ -60,59 +59,81 @@ export default function EducationSection({ educacion, eduForm, editEduIdx, setEd
         </Dialog>
       </div>
       <ul className="space-y-4 mb-6">
-        {educacion.map((edu, idx) => (
-          <li key={idx} className="bg-gray-50 rounded p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2 border">
-            <div>
-              <div className="font-semibold text-gray-900">{edu.titulo} <span className="text-gray-500 font-normal">en {edu.institucion}</span></div>
-              <div className="text-gray-500 text-sm">{edu.desde} - {edu.hasta}</div>
-              <div className="text-gray-700 text-sm mt-1">{edu.descripcion}</div>
-            </div>
-            <div className="flex gap-2 mt-2 md:mt-0">
-              {/* Dialog para editar */}
-              <Dialog open={editEduIdx === idx} onOpenChange={open => { setEditEduIdx(open ? idx : null); if (!open) setEduForm({ titulo: '', institucion: '', desde: '', hasta: '', descripcion: '' }); }}>
-                <DialogTrigger asChild>
-                  <button type="button" className="text-blue-600 hover:text-blue-800" onClick={() => { setEditEduIdx(idx); setEduForm(edu); }} title="Editar"><Edit2 className="w-4 h-4" /></button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogTitle>Editar educación</DialogTitle>
-                  <form onSubmit={addEducacion} className="bg-card border rounded-lg p-4 space-y-4 mb-6 animate-fade-in">
-                    <div className="flex gap-2 flex-col md:flex-row">
-                      <div className="flex-1">
-                        <Label htmlFor="titulo">Título</Label>
-                        <Input id="titulo" type="text" name="titulo" value={eduForm.titulo} onChange={handleEduChange} placeholder="Título" required />
+        {educacion.map((edu, idx) => {
+          // Map backend fields to frontend display
+          const titulo = edu.degree || edu.titulo;
+          const institucion = edu.institution || edu.institucion;
+          const desde = edu.startDate || edu.desde;
+          const hasta = edu.endDate || edu.hasta;
+          const descripcion = edu.description || edu.descripcion;
+
+          return (
+            <li key={edu._id || idx} className="bg-gray-50 rounded p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2 border">
+              <div>
+                <div className="font-semibold text-gray-900">{titulo} <span className="text-gray-500 font-normal">en {institucion}</span></div>
+                <div className="text-gray-500 text-sm">
+                  {desde ? new Date(desde).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : ''} -{' '}
+                  {hasta ? new Date(hasta).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}
+                </div>
+                <div className="text-gray-700 text-sm mt-1">{descripcion}</div>
+              </div>
+              <div className="flex gap-2 mt-2 md:mt-0">
+                {/* Dialog para editar */}
+                <Dialog open={editEduIdx === idx} onOpenChange={open => { setEditEduIdx(open ? idx : null); if (!open) setEduForm({ titulo: '', institucion: '', desde: '', hasta: '', descripcion: '' }); }}>
+                  <DialogTrigger asChild>
+                    <button type="button" className="text-blue-600 hover:text-blue-800" onClick={() => { 
+                      setEditEduIdx(idx); 
+                      // Map backend data to frontend form format
+                      setEduForm({
+                        titulo: titulo || '',
+                        institucion: institucion || '',
+                        desde: desde ? new Date(desde).toISOString().split('T')[0] : '',
+                        hasta: hasta ? new Date(hasta).toISOString().split('T')[0] : '',
+                        descripcion: descripcion || ''
+                      });
+                    }} title="Editar"><Edit2 className="w-4 h-4" /></button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogTitle>Editar educación</DialogTitle>
+                    <form onSubmit={addEducacion} className="bg-card border rounded-lg p-4 space-y-4 mb-6 animate-fade-in">
+                      <div className="flex gap-2 flex-col md:flex-row">
+                        <div className="flex-1">
+                          <Label htmlFor="titulo">Título</Label>
+                          <Input id="titulo" type="text" name="titulo" value={eduForm.titulo} onChange={handleEduChange} placeholder="Título" required />
+                        </div>
+                        <div className="flex-1">
+                          <Label htmlFor="institucion">Institución</Label>
+                          <Input id="institucion" type="text" name="institucion" value={eduForm.institucion} onChange={handleEduChange} placeholder="Institución" required />
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <Label htmlFor="institucion">Institución</Label>
-                        <Input id="institucion" type="text" name="institucion" value={eduForm.institucion} onChange={handleEduChange} placeholder="Institución" required />
+                      <div className="flex gap-2 flex-col md:flex-row">
+                        <div className="flex-1">
+                          <Label htmlFor="desde">Desde</Label>
+                          <Input id="desde" type="date" name="desde" value={eduForm.desde} onChange={handleEduChange} required />
+                        </div>
+                        <div className="flex-1">
+                          <Label htmlFor="hasta">Hasta</Label>
+                          <Input id="hasta" type="date" name="hasta" value={eduForm.hasta} onChange={handleEduChange} required />
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex gap-2 flex-col md:flex-row">
-                      <div className="flex-1">
-                        <Label htmlFor="desde">Desde</Label>
-                        <Input id="desde" type="date" name="desde" value={eduForm.desde} onChange={handleEduChange} required />
+                      <div>
+                        <Label htmlFor="descripcion">Descripción</Label>
+                        <Textarea id="descripcion" name="descripcion" value={eduForm.descripcion} onChange={handleEduChange} placeholder="Descripción" rows={2} />
                       </div>
-                      <div className="flex-1">
-                        <Label htmlFor="hasta">Hasta</Label>
-                        <Input id="hasta" type="date" name="hasta" value={eduForm.hasta} onChange={handleEduChange} required />
+                      <div className="flex gap-2 justify-end">
+                        <Button type="button" variant="ghost" onClick={() => setEditEduIdx(null)}>Cancelar</Button>
+                        <Button type="submit" variant="default" className="flex items-center gap-2">
+                          <Plus className="w-4 h-4" /> Actualizar
+                        </Button>
                       </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="descripcion">Descripción</Label>
-                      <Textarea id="descripcion" name="descripcion" value={eduForm.descripcion} onChange={handleEduChange} placeholder="Descripción" rows={2} />
-                    </div>
-                    <div className="flex gap-2 justify-end">
-                      <Button type="button" variant="ghost" onClick={() => setEditEduIdx(null)}>Cancelar</Button>
-                      <Button type="submit" variant="default" className="flex items-center gap-2">
-                        <Plus className="w-4 h-4" /> Actualizar
-                      </Button>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
-              <button type="button" className="text-red-500 hover:text-red-700" onClick={() => deleteEducacion(idx)} title="Eliminar"><Trash2 className="w-4 h-4" /></button>
-            </div>
-          </li>
-        ))}
+                    </form>
+                  </DialogContent>
+                </Dialog>
+                <button type="button" className="text-red-500 hover:text-red-700" onClick={() => deleteEducacion(idx)} title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

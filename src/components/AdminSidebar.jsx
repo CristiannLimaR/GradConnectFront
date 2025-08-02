@@ -1,14 +1,8 @@
 import React from 'react';
-import { BarChart3, Users, Building2, Briefcase, Shield, Mail, FileText } from 'lucide-react';
+import { Users, Building2, Briefcase } from 'lucide-react';
 
 export default function AdminSidebar({ activeTab, setActiveTab }) {
   const menuItems = [
-    {
-      id: 'dashboard',
-      label: 'Dashboard',
-      icon: BarChart3,
-      description: 'Estadísticas generales'
-    },
     {
       id: 'users',
       label: 'Usuarios',

@@ -19,10 +19,10 @@ export const useSkills = () => {
   const [loading, setLoading] = useState(false);
 
   // Obtener habilidades de un usuario
-  const fetchUserSkills = async (userId) => {
+  const fetchUserSkills = async () => {
     setLoading(true);
     try {
-      const resp = await getUserSkills(userId);
+      const resp = await getUserSkills();
       setLoading(false);
       if (!resp.success) {
         const msg = resp.error?.response?.data?.msg || "Error cargando habilidades del usuario";

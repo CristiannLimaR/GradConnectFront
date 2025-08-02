@@ -5,7 +5,6 @@ import { Dialog, DialogTrigger, DialogContent, DialogTitle } from "../ui/dialog"
 
 export default function ProfileSummary({ profile, refreshProfile }) {
   const [isEditing, setIsEditing] = useState(false);
-  const [showCVDialog, setShowCVDialog] = useState(false);
 
   const handleEditSuccess = (updatedProfile) => {
     setIsEditing(false);
@@ -90,11 +89,16 @@ export default function ProfileSummary({ profile, refreshProfile }) {
             <span className="font-semibold">CV:</span>{" "}
             {profile.cv ? (
               <>
-                <span className="text-blue-600">{profile.cv.name}</span>
+                <span className="text-blue-600">
+                  {typeof profile.cv === 'string' ? 'CV disponible' : profile.cv.name}
+                </span>
                 <button
                   type="button"
                   className="ml-2 text-blue-600 underline hover:text-blue-800 text-sm"
-                  onClick={() => setShowCVDialog(true)}
+                  onClick={() => {
+                    const cvUrl = typeof profile.cv === 'string' ? profile.cv : URL.createObjectURL(profile.cv);
+                    window.open(cvUrl, '_blank');
+                  }}
                 >
                   Ver
                 </button>
@@ -105,26 +109,7 @@ export default function ProfileSummary({ profile, refreshProfile }) {
           </div>
         </div>
       </div>
-      {/* Modal para previsualización del CV */}
-      {showCVDialog && profile.cv && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg shadow-lg p-4 max-w-2xl w-full relative">
-            <button
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl font-bold"
-              onClick={() => setShowCVDialog(false)}
-            >
-              ×
-            </button>
-            <h2 className="text-lg font-semibold mb-2">Previsualización del CV</h2>
-            <embed
-              src={URL.createObjectURL(profile.cv)}
-              type="application/pdf"
-              width="100%"
-              height="500px"
-            />
-          </div>
-        </div>
-      )}
+
     </div>
   );
-} 
+}

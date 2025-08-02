@@ -4,16 +4,54 @@ import { DataTable } from './data-table';
 import { companyColumns } from './columns/company-columns';
 import CompanyModal from './CompanyModal';
 import { useEnterprise } from '../shared/hooks/useEnterprise';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import CompanyForm from './CompanyForm';
 
 export default function CompanyManagement() {
-  const { enterprise, getEnterprises, deleteEnterprise } = useEnterprise();
+  const { enterprise, getEnterprises, deleteEnterprise, saveEnterprise, updateEnterprise } = useEnterprise();
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const handleViewProfile = (company) => {
     setSelectedCompany(company);
     setIsModalOpen(true);
+  };
+
+  const handleAddCompany = () => {
+    setSelectedCompany(null);
+    setIsEditing(false);
+    setIsDialogOpen(true);
+  };
+
+  const handleEditCompany = (company) => {
+    setSelectedCompany(company);
+    setIsEditing(true);
+    setIsDialogOpen(true);
+  };
+
+  const handleFormSubmit = async (formData) => {
+    try {
+      let result;
+      if (isEditing && selectedCompany) {
+        // Update existing company
+        result = await updateEnterprise(selectedCompany.id, formData);
+      } else {
+        // Create new company
+        result = await saveEnterprise(formData);
+      }
+      
+      // Check if the operation was successful
+      if (!result?.error) {
+        setIsDialogOpen(false);
+        setSelectedCompany(null);
+        // Refresh the enterprises list
+        await getEnterprises();
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+    }
   };
 
   useEffect(() => {
@@ -49,19 +87,16 @@ export default function CompanyManagement() {
           <h2 className="text-2xl font-bold text-gray-900">
             Gestión de Empresas
           </h2>
-          <button className="mt-4 sm:mt-0 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+          <button 
+            className="mt-4 sm:mt-0 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+            onClick={handleAddCompany}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Nueva Empresa
           </button>
         </div>
 
-        {/* Botón de exportar */}
-        <div className="flex justify-end">
-          <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center">
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
-          </button>
-        </div>
+        
       </div>
 
       {/* Tabla de empresas con DataTable */}
@@ -70,7 +105,8 @@ export default function CompanyManagement() {
           data={companies}
           columns={companyColumns({
             deleteEnterprise,
-            onViewProfile: handleViewProfile
+            onViewProfile: handleViewProfile,
+            onEditCompany: handleEditCompany
           })}
           searchKey={["name", "email", "adminUser.firstName"]}
           searchPlaceholder="Buscar empresas por nombre, descripción o sector..."
@@ -88,6 +124,23 @@ export default function CompanyManagement() {
         setSelectedCompany(null);
       }}
     />
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {isEditing ? 'Editar Empresa' : 'Agregar Nueva Empresa'}
+            </DialogTitle>
+          </DialogHeader>
+          <CompanyForm
+            company={isEditing ? selectedCompany : null}
+            onSubmit={handleFormSubmit}
+            onCancel={() => {
+              setIsDialogOpen(false);
+              setSelectedCompany(null);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 

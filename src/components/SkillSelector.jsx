@@ -92,6 +92,10 @@ const SkillSelector = ({
 
   const handleSkillRemove = async (skill) => {
     try {
+      console.log('Skill object to remove:', skill);
+      console.log('Skill._id:', skill._id);
+      console.log('UserId:', userId);
+      
       const success = await removeSkillFromUser(userId, skill._id);
       
       if (success) {

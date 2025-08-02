@@ -7,6 +7,7 @@ import EducationSection from "../components/UserProfile/EducationSection";
 import SkillsSection from "../components/UserProfile/SkillsSection";
 import ProfileSummary from "../components/UserProfile/ProfileSummary";
 import { useExperience } from "../shared/hooks/useExperience";
+import { useEducation } from "../shared/hooks/useEducation";
 import { useSkills } from "../shared/hooks/useSkills";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -27,6 +28,15 @@ export default function UserProfile() {
     updateExperienceById, 
     removeExperience 
   } = useExperience();
+
+  const { 
+    loading: educationLoading, 
+    educations, 
+    fetchEducations, 
+    addEducation, 
+    updateEducationById, 
+    removeEducation 
+  } = useEducation();
 
   const { 
     searchSkills, 
@@ -51,7 +61,6 @@ export default function UserProfile() {
   // Estados locales para educación
   const [editEduIdx, setEditEduIdx] = useState(null);
   const [eduForm, setEduForm] = useState({ titulo: '', institucion: '', desde: '', hasta: '', descripcion: '' });
-  const [educacion, setEducacion] = useState([]);
 
   useEffect(() => {
     if (user) {
@@ -65,9 +74,8 @@ export default function UserProfile() {
         cv: user.cvAdjunto,
         github: user.github,
         linkedin: user.linkedinUrl || user.linkedin,
-        descripcion: user.summary || user.description,
+        descripcion: user.descripcion || user.summary || user.description,
       });
-      setEducacion(user.educacion || []);
     }
   }, [user]);
 
@@ -78,6 +86,15 @@ export default function UserProfile() {
     };
 
     loadExperiences();
+  }, [user]);
+
+  useEffect(() => {
+    const loadEducations = async () => {
+      if (!user) return;
+      await fetchEducations();
+    };
+
+    loadEducations();
   }, [user]);
 
   const porcentaje = 0;
@@ -93,7 +110,7 @@ export default function UserProfile() {
       cv: updatedUser.cvAdjunto,
       github: updatedUser.github,
       linkedin: updatedUser.linkedinUrl || updatedUser.linkedin,
-      descripcion: updatedUser.summary || updatedUser.description,
+      descripcion: updatedUser.descripcion || updatedUser.summary || updatedUser.description,
     });
     setAuthUser(updatedUser);
   };
@@ -143,11 +160,53 @@ export default function UserProfile() {
   };
 
   // Funciones para educación
-  const addEducacion = () => {};
-  const deleteEducacion = () => {};
-  const handleEduChange = () => {};
+  const handleEduChange = (e) => {
+    const { name, value } = e.target;
+    setEduForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
-  const loading = experienceLoading;
+  const addEducacion = async (e) => {
+    e.preventDefault();
+    if (!eduForm.titulo.trim() || !eduForm.institucion.trim()) return;
+
+    const educationData = {
+      degree: eduForm.titulo,
+      institution: eduForm.institucion,
+      startDate: eduForm.desde,
+      endDate: eduForm.hasta,
+      description: eduForm.descripcion,
+    };
+
+    let result;
+    if (editEduIdx !== null && editEduIdx !== 'new') {
+      // Editing existing education
+      const educationToEdit = educations[editEduIdx];
+      result = await updateEducationById(educationToEdit._id, educationData);
+    } else {
+      // Adding new education
+      result = await addEducation(educationData);
+    }
+
+    if (result) {
+      setEduForm({ titulo: '', institucion: '', desde: '', hasta: '', descripcion: '' });
+      setEditEduIdx(null);
+    }
+  };
+
+  const deleteEducacion = async (index) => {
+    const educationToDelete = educations[index];
+    if (educationToDelete && educationToDelete._id) {
+      const success = await removeEducation(educationToDelete._id);
+      if (success) {
+        // Education is automatically removed from state by the hook
+      }
+    }
+  };
+
+  const loading = experienceLoading || educationLoading;
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center py-8 px-2 md:px-8 lg:px-0">
@@ -185,7 +244,7 @@ export default function UserProfile() {
               <Separator />
               <CardContent className="pt-4">
                 <EducationSection
-                  educacion={educacion}
+                  educacion={educations}
                   eduForm={eduForm}
                   editEduIdx={editEduIdx}
                   setEditEduIdx={setEditEduIdx}

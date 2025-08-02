@@ -2,6 +2,24 @@ import React from 'react';
 import { Users, Building2, Briefcase, FileText, User, Clock } from 'lucide-react';
 
 export default function AdminStats({ stats }) {
+  const getColorClass = (color) => {
+    switch (color) {
+      case 'blue': return 'bg-blue-100';
+      case 'green': return 'bg-green-100';
+      case 'purple': return 'bg-purple-100';
+      case 'orange': return 'bg-orange-100';
+      default: return 'bg-gray-100';
+    }
+  };
+
+  const getTextColorClass = (changeType) => {
+    switch (changeType) {
+      case 'positive': return 'text-green-600';
+      case 'negative': return 'text-red-600';
+      default: return 'text-gray-600';
+    }
+  };
+
   const statCards = [
     {
       title: 'Total de Usuarios',
@@ -81,14 +99,12 @@ export default function AdminStats({ stats }) {
                   <p className="text-sm font-medium text-gray-600">{stat.title}</p>
                   <p className="text-2xl font-bold text-gray-900">{stat.value.toLocaleString()}</p>
                 </div>
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-2xl bg-${stat.color}-100`}>
+                <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-2xl ${getColorClass(stat.color)}`}>
                   <IconComponent className="w-6 h-6 text-gray-600" />
                 </div>
               </div>
               <div className="mt-4 flex items-center">
-                <span className={`text-sm font-medium ${
-                  stat.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
-                }`}>
+                <span className={`text-sm font-medium ${getTextColorClass(stat.changeType)}`}>
                   {stat.change}
                 </span>
                 <span className="text-sm text-gray-500 ml-2">vs mes anterior</span>

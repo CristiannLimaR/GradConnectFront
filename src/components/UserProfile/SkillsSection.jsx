@@ -23,7 +23,7 @@ export default function SkillsSection() {
     const loadUserSkills = async () => {
       if (user?.id) {
         setLoading(true);
-        const skills = await fetchUserSkills(user.id);
+        const skills = await fetchUserSkills();
         if (skills) {
           console.log('Skills loaded:', skills); // Debug log
           
@@ -140,7 +140,7 @@ export default function SkillsSection() {
             <DialogTitle>Gestionar Habilidades</DialogTitle>
             
             <SkillSelector
-              userId={user?._id}
+              userId={user?.id}
               selectedSkills={userSkills}
               onSkillAdded={handleSkillAdded}
               onSkillRemoved={handleSkillRemoved}

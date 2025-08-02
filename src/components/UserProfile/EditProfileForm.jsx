@@ -121,19 +121,8 @@ export default function EditProfileForm({ onClose, onSuccess, isInline = false }
   };
 
   return (
-    <div className={`${!isInline ? "fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-25" : ""}`}>
-      <div className={`bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl relative max-h-[90vh] overflow-auto ${isInline ? "" : "mx-4"}`}>
-        {!isInline && (
-          <button
-            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl font-bold"
-            onClick={onClose}
-            aria-label="Cerrar formulario"
-          >
-            ×
-          </button>
-        )}
-
-        <h2 className="text-xl font-bold mb-4">Editar perfil</h2>
+    <div>
+      <div>
 
         <form onSubmit={handleSubmit} className="space-y-6" noValidate>
           {/* Datos generales */}

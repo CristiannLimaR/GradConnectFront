@@ -89,32 +89,6 @@ export default function Login() {
             </div>
             <Button className="w-full" type="submit">Entrar</Button>
           </form>
-          <div className="my-6 flex items-center justify-center">
-            <span className="text-gray-400 text-sm">o continúa con</span>
-          </div>
-          <div className="flex flex-col gap-3">
-            <Button
-              className="w-full flex items-center justify-center gap-2 bg-black text-white hover:bg-gray-800"
-              type="button"
-              onClick={() => handleSocialLogin("github")}
-            >
-              <FaGithub className="w-5 h-5" /> Iniciar sesión con GitHub
-            </Button>
-            <Button
-              className="w-full flex items-center justify-center gap-2 bg-blue-700 text-white hover:bg-blue-800"
-              type="button"
-              onClick={() => handleSocialLogin("linkedin")}
-            >
-              <FaLinkedin className="w-5 h-5" /> Iniciar sesión con LinkedIn
-            </Button>
-            <Button
-              className="w-full flex items-center justify-center gap-2 bg-red-600 text-white hover:bg-red-700"
-              type="button"
-              onClick={() => handleSocialLogin("google")}
-            >
-              <FaGoogle className="w-5 h-5" /> Iniciar sesión con Google
-            </Button>
-          </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-2 items-center">
           <span className="text-sm">¿No tienes cuenta? <Link to="/register" className="text-blue-600 hover:underline">Regístrate</Link></span>

@@ -11,7 +11,7 @@ import {
 
 
 
-export const companyColumns = ({ deleteEnterprise, onViewProfile }) => [
+export const companyColumns = ({ deleteEnterprise, onViewProfile, onEditCompany }) => [
   {
     accessorKey: "name",
     header: ({ column }) => {
@@ -224,7 +224,9 @@ export const companyColumns = ({ deleteEnterprise, onViewProfile }) => [
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => onViewProfile(company)}>Ver perfil completo</DropdownMenuItem>
-            <DropdownMenuItem>Editar empresa</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onEditCompany(company)}>
+          Editar empresa
+        </DropdownMenuItem>
             {company.status !== 'Activa' && (
               <DropdownMenuItem className="text-green-600">
                 Verificar empresa

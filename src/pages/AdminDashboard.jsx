@@ -19,23 +19,17 @@ export default function AdminDashboard() {
   });
 
   useEffect(() => {
-    // Simular carga de estadísticas
-    setStats({
-      totalUsers: 1247,
-      totalCompanies: 89,
-      totalJobs: 342,
-      activeUsers: 1189,
-      activeCompanies: 76,
-      activeJobs: 298,
-      applicationsThisMonth: 1567,
-      newUsersThisMonth: 89
-    });
+    const fetchStats = async () => {
+      const stats = await getAdminDashboardStats();
+      if (stats && !stats.error) {
+        setStats(stats);
+      }
+    };
+    fetchStats();
   }, []);
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard':
-        return <AdminStats stats={stats} />;
       case 'users':
         return <UserManagement />;
       case 'companies':
@@ -43,7 +37,7 @@ export default function AdminDashboard() {
       case 'jobs':
         return <JobManagement />;
       default:
-        return <AdminStats stats={stats} />;
+        return <UserManagement />;
     }
   };
 

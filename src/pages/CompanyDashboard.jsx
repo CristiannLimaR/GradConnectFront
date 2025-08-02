@@ -41,8 +41,10 @@ import { useOffer } from "../shared/hooks/useWOffer";
 import { useEnterprise } from "../shared/hooks/useEnterprise";
 import { useSkills } from "../shared/hooks/useSkills.js";
 import useAuthStore from "../shared/stores/authStore.js";
+import useMessages from "../shared/hooks/useMessages.js";
 import { toast } from "sonner";
 import JobSkillSelector from "../components/JobSkillSelector";
+import { getCompanyDashboardStats } from "../service/api";
 
 const SECCIONES = [
   { key: "perfil", label: "Perfil de la empresa" },
@@ -51,10 +53,56 @@ const SECCIONES = [
 ];
 
 export default function CompanyDashboard() {
+  // Function to format date to dd/mm/yyyy
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   const { getOffersByEnterprise, saveOffer, editOffer, deleteOffer } =
     useOffer();
+
+  // Function to close/open job offer
+  const cerrarOferta = async (offerId, currentStatus) => {
+    try {
+      // Backend uses Boolean: true = active/open, false = closed
+      const newStatus = currentStatus ? false : true;
+      const success = await editOffer(offerId, { status: newStatus });
+      if (success && !success.error) {
+        toast.success(`Oferta ${newStatus ? 'abierta' : 'cerrada'} exitosamente`);
+        // Reload offers
+        const updated = await getOffersByEnterprise(enterprise.id);
+        if (updated && updated.offers) {
+          setOffers(updated.offers);
+        }
+      } else {
+        toast.error('Error al actualizar el estado de la oferta');
+      }
+    } catch (error) {
+      toast.error('Error al actualizar el estado de la oferta');
+    }
+  };
   const { user } = useAuthStore();
   const { getEnterpriseByRecruiter, updateEnterprise } = useEnterprise();
+  
+  // Messaging functionality
+  const {
+    conversations,
+    currentConversation,
+    messages,
+    loading: messagesLoading,
+    sending,
+    isConnected,
+    selectConversation,
+    sendMessage,
+    startConversation,
+    handleStartTyping,
+    handleStopTyping
+  } = useMessages();
   
   const [offers, setOffers] = useState([]);
   const [enterprise, setEnterprise] = useState(null);
@@ -74,6 +122,10 @@ export default function CompanyDashboard() {
   const [candidatosOferta, setCandidatosOferta] = useState([]);
   const [conversacionSeleccionada, setConversacionSeleccionada] =
     useState(null);
+  const [nuevoMensaje, setNuevoMensaje] = useState("");
+  const [contactDialog, setContactDialog] = useState(false);
+  const [candidatoSeleccionado, setCandidatoSeleccionado] = useState(null);
+  const [mensajeInicial, setMensajeInicial] = useState("");
   const [formOferta, setFormOferta] = useState({
     title: "",
     description: "",
@@ -90,211 +142,11 @@ export default function CompanyDashboard() {
   
 
   const [nuevaSkill, setNuevaSkill] = useState("");
+  const [candidatos, setCandidatos] = useState([]);
+  const [mensajes, setMensajes] = useState([]);
 
-  // ############## FAKE DATA ##############
-  // Simulación de datos de empresa y ofertas
 
-  const empresa = {
-    nombre: "Mi Empresa",
-    descripcion: "Descripción de la empresa...",
-    email: "empresa@email.com",
-    ubicacion: "Madrid",
-    telefono: "+34 600 000 000",
-    foto: "",
-    linkedin: "",
-    github: "",
-    cv: null,
-  };
 
-  const candidatos = [
-    {
-      id: 1,
-      nombre: "Juan Pérez",
-      email: "juan@email.com",
-      telefono: "+34 600 111 111",
-      descripcion: "Desarrollador con experiencia...",
-      mensaje:
-        "Me interesa mucho esta posición. Tengo 3 años de experiencia en React y Node.js.",
-      fecha: "Hace 2 días",
-      ofertaId: 1,
-      // Información adicional del perfil
-      edad: 28,
-      ubicacion: "Madrid, España",
-      experiencia: "3 años",
-      educacion: "Ingeniería Informática - Universidad Complutense",
-      habilidades: [
-        "React",
-        "Node.js",
-        "JavaScript",
-        "TypeScript",
-        "MongoDB",
-        "PostgreSQL",
-      ],
-      idiomas: ["Español (Nativo)", "Inglés (Avanzado)"],
-      linkedin: "linkedin.com/in/juanperez",
-      github: "github.com/juanperez",
-      portfolio: "juanperez.dev",
-      cv: "CV_Juan_Perez.pdf",
-      estadoCivil: "Soltero",
-      disponibilidad: "Inmediata",
-      expectativaSalarial: "€35,000 - €45,000",
-      preferencias: ["Remoto", "Flexibilidad horaria", "Proyectos innovadores"],
-    },
-    {
-      id: 2,
-      nombre: "María García",
-      email: "maria@email.com",
-      telefono: "+34 600 222 222",
-      descripcion: "Desarrolladora frontend...",
-      mensaje:
-        "Perfecto para mi perfil. He trabajado con las tecnologías que mencionan.",
-      fecha: "Hace 1 día",
-      ofertaId: 1,
-      // Información adicional del perfil
-      edad: 25,
-      ubicacion: "Barcelona, España",
-      experiencia: "2 años",
-      educacion:
-        "Grado en Desarrollo de Aplicaciones Web - Universitat Pompeu Fabra",
-      habilidades: ["React", "Vue.js", "CSS", "Sass", "JavaScript", "Git"],
-      idiomas: ["Español (Nativo)", "Inglés (Intermedio)", "Catalán (Nativo)"],
-      linkedin: "linkedin.com/in/mariagarcia",
-      github: "github.com/mariagarcia",
-      portfolio: "mariagarcia.com",
-      cv: "CV_Maria_Garcia.pdf",
-      estadoCivil: "Casada",
-      disponibilidad: "2 semanas",
-      expectativaSalarial: "€30,000 - €40,000",
-      preferencias: ["Híbrido", "Horario flexible", "Equipo joven"],
-    },
-    {
-      id: 3,
-      nombre: "Carlos López",
-      email: "carlos@email.com",
-      telefono: "+34 600 333 333",
-      descripcion: "Desarrollador backend...",
-      mensaje:
-        "Me encantaría formar parte del equipo. Tengo experiencia en Python y Django.",
-      fecha: "Hace 3 días",
-      ofertaId: 2,
-      // Información adicional del perfil
-      edad: 32,
-      ubicacion: "Valencia, España",
-      experiencia: "5 años",
-      educacion: "Ingeniería de Sistemas - Universidad Politécnica de Valencia",
-      habilidades: ["Python", "Django", "Flask", "PostgreSQL", "Docker", "AWS"],
-      idiomas: ["Español (Nativo)", "Inglés (Avanzado)", "Valenciano (Básico)"],
-      linkedin: "linkedin.com/in/carloslopez",
-      github: "github.com/carloslopez",
-      portfolio: "carloslopez.tech",
-      cv: "CV_Carlos_Lopez.pdf",
-      estadoCivil: "Casado",
-      disponibilidad: "1 mes",
-      expectativaSalarial: "€45,000 - €55,000",
-      preferencias: [
-        "Presencial",
-        "Liderazgo técnico",
-        "Arquitectura de software",
-      ],
-    },
-  ];
-  const mensajes = [
-    {
-      id: 1,
-      candidato: "Juan Pérez",
-      email: "juan@email.com",
-      oferta: "Desarrollador Frontend",
-      ultimoMensaje:
-        "Me interesa mucho esta posición. ¿Podríamos agendar una entrevista?",
-      fecha: "Hace 2 horas",
-      leido: false,
-      conversacion: [
-        {
-          id: 1,
-          autor: "candidato",
-          mensaje:
-            "Hola, me interesa mucho esta posición. Tengo 3 años de experiencia en React y Node.js.",
-          fecha: "Hace 2 días",
-        },
-        {
-          id: 2,
-          autor: "empresa",
-          mensaje:
-            "Hola Juan, gracias por tu interés. ¿Podrías enviarnos tu CV actualizado?",
-          fecha: "Hace 1 día",
-        },
-        {
-          id: 3,
-          autor: "candidato",
-          mensaje:
-            "Por supuesto, ya lo he enviado. ¿Podríamos agendar una entrevista?",
-          fecha: "Hace 2 horas",
-        },
-      ],
-    },
-    {
-      id: 2,
-      candidato: "María García",
-      email: "maria@email.com",
-      oferta: "Desarrollador Frontend",
-      ultimoMensaje: "Perfecto, estaré disponible el martes a las 10:00 AM.",
-      fecha: "Hace 1 día",
-      leido: true,
-      conversacion: [
-        {
-          id: 1,
-          autor: "candidato",
-          mensaje:
-            "Perfecto para mi perfil. He trabajado con las tecnologías que mencionan.",
-          fecha: "Hace 3 días",
-        },
-        {
-          id: 2,
-          autor: "empresa",
-          mensaje:
-            "Excelente María. ¿Te parece bien el martes a las 10:00 AM para la entrevista?",
-          fecha: "Hace 1 día",
-        },
-        {
-          id: 3,
-          autor: "candidato",
-          mensaje: "Perfecto, estaré disponible el martes a las 10:00 AM.",
-          fecha: "Hace 1 día",
-        },
-      ],
-    },
-    {
-      id: 3,
-      candidato: "Carlos López",
-      email: "carlos@email.com",
-      oferta: "Desarrollador Backend",
-      ultimoMensaje: "Gracias por la oportunidad. Espero su respuesta.",
-      fecha: "Hace 3 días",
-      leido: true,
-      conversacion: [
-        {
-          id: 1,
-          autor: "candidato",
-          mensaje:
-            "Me encantaría formar parte del equipo. Tengo experiencia en Python y Django.",
-          fecha: "Hace 5 días",
-        },
-        {
-          id: 2,
-          autor: "empresa",
-          mensaje:
-            "Hola Carlos, gracias por tu aplicación. Revisaremos tu perfil y te contactaremos pronto.",
-          fecha: "Hace 3 días",
-        },
-        {
-          id: 3,
-          autor: "candidato",
-          mensaje: "Gracias por la oportunidad. Espero su respuesta.",
-          fecha: "Hace 3 días",
-        },
-      ],
-    },
-  ];
 
   // Estdos OFFERS ////////////////////////////////////////
 
@@ -364,18 +216,29 @@ export default function CompanyDashboard() {
   }
 }, [enterprise]);
 
-  // Cálculo de estadísticas
-  const estadisticas = {
-    totalOfertas: offers.length,
-    totalCandidatos: candidatos.length,
-    mensajesNoLeidos: mensajes.filter((m) => !m.leido).length,
-    ofertasActivas: offers.filter(
-      (o) => o.timePosted?.includes("día") || o.timePosted?.includes("hora")
-    ).length,
-    candidatosRecientes: candidatos.filter((c) => c.fecha.includes("día"))
-      .length,
-    tasaRespuesta: Math.round((mensajes.length / candidatos.length) * 100) || 0,
-  };
+  // Estado de estadísticas del dashboard
+  const [estadisticas, setEstadisticas] = useState({
+    totalOfertas: 0,
+    totalCandidatos: 0,
+    mensajesNoLeidos: 0,
+    ofertasActivas: 0,
+    candidatosRecientes: 0,
+    tasaRespuesta: 0
+  });
+
+  // Obtener estadísticas del backend cuando enterprise esté disponible
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (enterprise && (enterprise._id || enterprise.id)) {
+        const stats = await getCompanyDashboardStats(enterprise._id || enterprise.id);
+        if (stats && !stats.error) {
+          setEstadisticas(stats);
+        }
+      }
+    };
+    fetchStats();
+  }, [enterprise]);
+
 
   // Datos para el chart de candidatos por oferta
   const chartData = offers.map((offer) => ({
@@ -384,10 +247,30 @@ export default function CompanyDashboard() {
   }));
 
   const mostrarCandidatos = (ofertaId) => {
-    const candidatosFiltrados = candidatos.filter(
-      (c) => c.ofertaId === ofertaId
-    );
-    setCandidatosOferta(candidatosFiltrados);
+    // Encontrar la oferta específica
+    const oferta = offers.find(offer => offer.id === ofertaId || offer._id === ofertaId);
+    
+    if (oferta && oferta.applications) {
+      // Extraer candidatos de las aplicaciones
+      const candidatosFromApplications = oferta.applications.map(application => ({
+        id: application._id,
+        nombre: `${application.usuarioId.firstName} ${application.usuarioId.lastName}`,
+        email: application.usuarioId.email,
+        telefono: application.usuarioId.phone || 'No disponible',
+        ubicacion: application.usuarioId.location || 'No especificada',
+        descripcion: 'Candidato aplicado a la oferta',
+        skills: application.usuarioId.skills || [],
+        registrationDate: application.usuarioId.registrationDate,
+        ofertaId: ofertaId,
+        applicationId: application._id,
+        usuarioId: application.usuarioId._id
+      }));
+      
+      setCandidatosOferta(candidatosFromApplications);
+    } else {
+      setCandidatosOferta([]);
+    }
+    
     setCandidatosDialog(true);
   };
 
@@ -551,9 +434,67 @@ export default function CompanyDashboard() {
     }
   };
   const verPerfilCompleto = (candidato) => {
-    // Redirigir a una nueva página con los datos del candidato
-    const candidatoData = encodeURIComponent(JSON.stringify(candidato));
-    navigate(`/candidato-perfil?data=${candidatoData}`);
+    // Redirigir a una nueva página con el ID del candidato
+    // Los datos se obtendrán mediante API call en la página de destino
+    const userId = candidato.usuarioId || candidato.id || candidato._id;
+    console.log('Navigating to profile with userId:', userId);
+    navigate(`/candidato-perfil/${userId}`);
+  };
+
+  // Funciones de mensajería
+  const abrirDialogoContacto = (candidato) => {
+    setCandidatoSeleccionado(candidato);
+    setMensajeInicial("");
+    setContactDialog(true);
+  };
+
+  const enviarMensajeInicial = async () => {
+    if (!candidatoSeleccionado || !mensajeInicial.trim()) {
+      toast.error("Por favor, escribe un mensaje");
+      return;
+    }
+
+    try {
+      const userId = candidatoSeleccionado.usuarioId || candidatoSeleccionado.id || candidatoSeleccionado._id;
+      const jobOfferId = candidatoSeleccionado.ofertaId;
+      
+      await startConversation(userId, jobOfferId, mensajeInicial.trim());
+      
+      setContactDialog(false);
+      setCandidatoSeleccionado(null);
+      setMensajeInicial("");
+      
+      // Cambiar a la sección de mensajes
+      setSeccion("mensajes");
+    } catch (error) {
+      console.error('Error sending initial message:', error);
+    }
+  };
+
+  const enviarMensaje = async () => {
+    if (!currentConversation || !nuevoMensaje.trim()) {
+      return;
+    }
+
+    try {
+      await sendMessage(
+        currentConversation.otherParticipant.id,
+        currentConversation.otherParticipant.type,
+        nuevoMensaje.trim(),
+        currentConversation.jobOffer?._id
+      );
+      
+      setNuevoMensaje("");
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      enviarMensaje();
+    }
   };
 
   // Efecto para manejar los parámetros de URL
@@ -684,25 +625,6 @@ export default function CompanyDashboard() {
                   </div>
                 </Card>
 
-                <Card className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">
-                        Tasa de Respuesta
-                      </p>
-                      <p className="text-2xl font-bold text-gray-900">
-                        {estadisticas.tasaRespuesta}%
-                      </p>
-                      <p className="text-xs text-blue-600 flex items-center mt-1">
-                        <FileText className="w-3 h-3 mr-1" />
-                        Conversaciones activas
-                      </p>
-                    </div>
-                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <FileText className="w-6 h-6 text-purple-600" />
-                    </div>
-                  </div>
-                </Card>
 
                 <Card className="p-6">
                   <div className="flex items-center justify-between">
@@ -724,25 +646,7 @@ export default function CompanyDashboard() {
                   </div>
                 </Card>
 
-                <Card className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">
-                        Promedio Salarial
-                      </p>
-                      <p className="text-2xl font-bold text-gray-900">
-                        €37,500
-                      </p>
-                      <p className="text-xs text-gray-600 flex items-center mt-1">
-                        <DollarSign className="w-3 h-3 mr-1" />
-                        Rango promedio
-                      </p>
-                    </div>
-                    <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                      <DollarSign className="w-6 h-6 text-yellow-600" />
-                    </div>
-                  </div>
-                </Card>
+
               </div>
             </div>
 
@@ -1131,40 +1035,7 @@ export default function CompanyDashboard() {
                     </div>
                   </div>
                 </Card>
-                <Card className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">
-                    Actividad reciente
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">
-                          Nueva oferta publicada
-                        </p>
-                        <p className="text-xs text-gray-600">Hace 1 día</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">
-                          5 candidatos aplicaron
-                        </p>
-                        <p className="text-xs text-gray-600">Hace 2 días</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">
-                          Entrevista programada
-                        </p>
-                        <p className="text-xs text-gray-600">Hace 3 días</p>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
+                
               </div>
             </div>
           </>
@@ -1260,12 +1131,30 @@ export default function CompanyDashboard() {
                             >
                               <Users className="w-5 h-5" />
                             </button>
+                            <button
+                              className={`p-1 ${
+                                !oferta.status
+                                  ? 'text-gray-400 hover:text-green-600'
+                                  : 'text-gray-400 hover:text-red-600'
+                              }`}
+                              title={!oferta.status ? 'Abrir convocatoria' : 'Cerrar convocatoria'}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                cerrarOferta(oferta.id, oferta.status !== undefined ? oferta.status : true);
+                              }}
+                            >
+                              {!oferta.status ? (
+                                <Eye className="w-5 h-5" />
+                              ) : (
+                                <X className="w-5 h-5" />
+                              )}
+                            </button>
                           </div>
                         </div>
                         <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
                           <span className="flex items-center">
                             <Clock className="w-4 h-4 mr-1" />
-                            {oferta.timePosted}
+                            {formatDate(oferta.createdAt)}
                           </span>
                           <span>•</span>
                           <span className="flex items-center">
@@ -1276,6 +1165,15 @@ export default function CompanyDashboard() {
                         <div className="flex flex-wrap gap-2 mb-3">
                           <span
                             className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              oferta.status
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {oferta.status ? "Abierta" : "Cerrada"}
+                          </span>
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${
                               oferta.modality === "Tiempo Completo"
                                 ? "bg-orange-100 text-orange-800"
                                 : "bg-gray-100 text-gray-800"
@@ -1284,7 +1182,7 @@ export default function CompanyDashboard() {
                             {oferta.modality}
                           </span>
                           {oferta.location === "Remoto" && (
-                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                               Remote
                             </span>
                           )}
@@ -1649,109 +1547,142 @@ export default function CompanyDashboard() {
         )}
         {seccion === "mensajes" && (
           <div className="max-w-6xl mx-auto">
-            <h2 className="text-2xl font-bold mb-6">Mensajes de candidatos</h2>
-            <div className="flex gap-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Mensajes de candidatos</h2>
+              <div className="flex items-center gap-2">
+                <div className={`w-3 h-3 rounded-full ${
+                  isConnected ? 'bg-green-500' : 'bg-red-500'
+                }`}></div>
+                <span className="text-sm text-gray-600">
+                  {isConnected ? 'Conectado' : 'Desconectado'}
+                </span>
+              </div>
+            </div>
+            <div className="flex gap-6 h-[700px]">
               {/* Lista de conversaciones */}
-              <div className="w-80 bg-white rounded-lg border">
+              <div className="w-1/3 bg-white rounded-lg border">
                 <div className="p-4 border-b">
                   <h3 className="font-semibold">Conversaciones</h3>
+                  {messagesLoading && (
+                    <div className="text-xs text-gray-500 mt-1">Cargando...</div>
+                  )}
                 </div>
-                <div className="max-h-[600px] overflow-y-auto">
-                  {mensajes.map((mensaje) => (
-                    <div
-                      key={mensaje.id}
-                      onClick={() => setConversacionSeleccionada(mensaje)}
-                      className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${
-                        conversacionSeleccionada?.id === mensaje.id
-                          ? "bg-blue-50 border-blue-200"
-                          : ""
-                      }`}
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-sm">
-                            {mensaje.candidato}
-                          </h4>
-                          <p className="text-xs text-gray-500">
-                            {mensaje.oferta}
-                          </p>
+                <div className="overflow-y-auto h-[600px]">
+                  {conversations.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500">
+                      <MessageSquare className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                      <p className="text-sm">No hay conversaciones</p>
+                    </div>
+                  ) : (
+                    conversations.map((conversation) => (
+                      <div
+                        key={conversation.conversationId}
+                        className={`p-4 border-b cursor-pointer hover:bg-gray-50 ${
+                          currentConversation?.conversationId === conversation.conversationId
+                            ? "bg-blue-50 border-l-4 border-l-blue-500"
+                            : ""
+                        }`}
+                        onClick={() => selectConversation(conversation)}
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-medium">{conversation.otherParticipant.name}</h4>
+                          <span className="text-xs text-gray-500">
+                            {new Date(conversation.lastMessage.createdAt).toLocaleDateString()}
+                          </span>
                         </div>
-                        {!mensaje.leido && (
-                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        {conversation.jobOffer && (
+                          <p className="text-sm text-gray-600 mb-1">
+                            {conversation.jobOffer.title}
+                          </p>
+                        )}
+                        <p className="text-sm text-gray-800 truncate">
+                          {conversation.lastMessage.isFromMe ? 'Tú: ' : ''}
+                          {conversation.lastMessage.content}
+                        </p>
+                        {conversation.unreadCount > 0 && (
+                          <div className="flex items-center mt-2">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                            <span className="text-xs text-blue-600 font-medium">
+                              {conversation.unreadCount} nuevo{conversation.unreadCount > 1 ? 's' : ''}
+                            </span>
+                          </div>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 truncate">
-                        {mensaje.ultimoMensaje}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {mensaje.fecha}
-                      </p>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
 
               {/* Conversación seleccionada */}
               <div className="flex-1 bg-white rounded-lg border">
-                {conversacionSeleccionada ? (
+                {currentConversation ? (
                   <>
                     <div className="p-4 border-b">
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 className="font-semibold">
-                            {conversacionSeleccionada.candidato}
+                            {currentConversation.otherParticipant.name}
                           </h3>
-                          <p className="text-sm text-gray-600">
-                            {conversacionSeleccionada.oferta}
-                          </p>
+                          {currentConversation.jobOffer && (
+                            <p className="text-sm text-gray-600">
+                              {currentConversation.jobOffer.title}
+                            </p>
+                          )}
                           <p className="text-xs text-gray-500">
-                            {conversacionSeleccionada.email}
+                            {currentConversation.otherParticipant.email}
                           </p>
                         </div>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => window.open(`mailto:${currentConversation.otherParticipant.email}`, '_blank')}
+                          >
                             <Mail className="w-4 h-4 mr-1" />
                             Email
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Phone className="w-4 h-4 mr-1" />
-                            Llamar
                           </Button>
                         </div>
                       </div>
                     </div>
                     <div className="h-[500px] overflow-y-auto p-4">
-                      <div className="space-y-4">
-                        {conversacionSeleccionada.conversacion.map((msg) => (
-                          <div
-                            key={msg.id}
-                            className={`flex ${
-                              msg.autor === "empresa"
-                                ? "justify-end"
-                                : "justify-start"
-                            }`}
-                          >
-                            <div
-                              className={`max-w-[70%] p-3 rounded-lg ${
-                                msg.autor === "empresa"
-                                  ? "bg-blue-600 text-white"
-                                  : "bg-gray-100 text-gray-900"
-                              }`}
-                            >
-                              <p className="text-sm">{msg.mensaje}</p>
-                              <p
-                                className={`text-xs mt-1 ${
-                                  msg.autor === "empresa"
-                                    ? "text-blue-100"
-                                    : "text-gray-500"
+                      {messagesLoading ? (
+                        <div className="flex items-center justify-center h-full">
+                          <div className="text-gray-500">Cargando mensajes...</div>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {messages.map((message) => {
+                            const isFromMe = message.sender._id === user.id;
+                            return (
+                              <div
+                                key={message._id}
+                                className={`flex ${
+                                  isFromMe ? "justify-end" : "justify-start"
                                 }`}
                               >
-                                {msg.fecha}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                                <div
+                                  className={`max-w-[70%] p-3 rounded-lg ${
+                                    isFromMe
+                                      ? "bg-blue-600 text-white"
+                                      : "bg-gray-100 text-gray-900"
+                                  }`}
+                                >
+                                  <p className="text-sm">{message.content}</p>
+                                  <p
+                                    className={`text-xs mt-1 ${
+                                      isFromMe
+                                        ? "text-blue-100"
+                                        : "text-gray-500"
+                                    }`}
+                                  >
+                                    {new Date(message.createdAt).toLocaleTimeString()}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                     <div className="p-4 border-t">
                       <div className="flex gap-2">
@@ -1759,8 +1690,17 @@ export default function CompanyDashboard() {
                           placeholder="Escribe tu respuesta..."
                           className="flex-1"
                           rows={2}
+                          value={nuevoMensaje}
+                          onChange={(e) => setNuevoMensaje(e.target.value)}
+                          onKeyPress={handleKeyPress}
+                          disabled={sending}
                         />
-                        <Button>Enviar</Button>
+                        <Button 
+                          onClick={enviarMensaje}
+                          disabled={sending || !nuevoMensaje.trim()}
+                        >
+                          {sending ? 'Enviando...' : 'Enviar'}
+                        </Button>
                       </div>
                     </div>
                   </>
@@ -1777,6 +1717,139 @@ export default function CompanyDashboard() {
           </div>
         )}
       </main>
+
+      {/* Dialog para mostrar candidatos */}
+      <Dialog open={candidatosDialog} onOpenChange={setCandidatosDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Candidatos Aplicados</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {candidatosOferta.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Users className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                <p>No hay candidatos aplicados a esta oferta</p>
+              </div>
+            ) : (
+              candidatosOferta.map((candidato) => (
+                <Card key={candidato.id} className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <User className="w-5 h-5 text-blue-600" />
+                        <h3 className="font-semibold text-lg">{candidato.nombre}</h3>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Mail className="w-4 h-4" />
+                            <span>{candidato.email}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Phone className="w-4 h-4" />
+                            <span>{candidato.telefono}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <MapPin className="w-4 h-4" />
+                            <span>{candidato.ubicacion}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div className="text-sm">
+                            <span className="font-medium">Fecha de registro:</span>
+                            <span className="ml-2 text-gray-600">
+                              {candidato.registrationDate ? new Date(candidato.registrationDate).toLocaleDateString() : 'No disponible'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Skills del candidato */}
+                      {candidato.skills && candidato.skills.length > 0 && (
+                        <div className="mb-4">
+                          <h4 className="font-medium mb-2">Habilidades:</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {candidato.skills.map((skill, index) => (
+                              <span
+                                key={index}
+                                className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
+                              >
+                                {skill.skillId || skill.nameSkill || 'Skill'} 
+                                {skill.levelSkill && ` (${skill.levelSkill})`}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex gap-2 ml-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => verPerfilCompleto(candidato)}
+                      >
+                        <Eye className="w-4 h-4 mr-1" />
+                        Ver Perfil
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => abrirDialogoContacto(candidato)}
+                      >
+                        <MessageSquare className="w-4 h-4 mr-1" />
+                        Contactar
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para contactar candidato */}
+      <Dialog open={contactDialog} onOpenChange={setContactDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Contactar Candidato</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {candidatoSeleccionado && (
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <h4 className="font-medium">{candidatoSeleccionado.nombre}</h4>
+                <p className="text-sm text-gray-600">{candidatoSeleccionado.email}</p>
+              </div>
+            )}
+            <div>
+              <Label className="mb-2">Mensaje inicial</Label>
+              <Textarea
+                placeholder="Hola, me interesa tu perfil para esta posición..."
+                value={mensajeInicial}
+                onChange={(e) => setMensajeInicial(e.target.value)}
+                rows={4}
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setContactDialog(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={enviarMensajeInicial}
+                disabled={sending || !mensajeInicial.trim()}
+              >
+                {sending ? 'Enviando...' : 'Enviar Mensaje'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

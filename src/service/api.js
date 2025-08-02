@@ -96,6 +96,15 @@ export const adminDeleteUser = async (id) => {
   }
 };
 
+export const getUserProfile = async (userId) => {
+  try {
+    const response = await apiClient.get(`/user/${userId}`);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
 export const saveExperience = async (data) => {
   try {
     const response = await apiClient.post("/experience", data);
@@ -132,10 +141,87 @@ export const deleteExperience = async (experienceId) => {
   }
 };
 
+// Get experience data for a specific user by userId
+export const getExperiencesByUserId = async (userId) => {
+  try {
+    const response = await apiClient.get(`/experience/user/${userId}`);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+// ##### Education #####
+export const saveEducation = async (data) => {
+  try {
+    const response = await apiClient.post("/education", data);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+export const getEducations = async () => {
+  try {
+    const response = await apiClient.get("/education");
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+export const updateEducation = async (educationId, data) => {
+  try {
+    const response = await apiClient.put(`/education/${educationId}`, data);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+export const deleteEducation = async (educationId) => {
+  try {
+    const response = await apiClient.delete(`/education/${educationId}`);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+// Get education data for a specific user by userId
+export const getEducationsByUserId = async (userId) => {
+  try {
+    const response = await apiClient.get(`/education/user/${userId}`);
+    return { success: true, data: response.data };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+};
+
+
+// Obtener estadísticas del dashboard de empresa
+export const getCompanyDashboardStats = async (enterpriseId) => {
+  try {
+    const response = await apiClient.get(`/enterprise/${enterpriseId}/stats`);
+    return response.data;
+  } catch (e) {
+    return { error: true, e };
+  }
+};
+
+// Obtener estadísticas del dashboard de admin
+export const getAdminDashboardStats = async () => {
+  try {
+    const response = await apiClient.get(`/user/admin-stats`);
+    return response.data;
+  } catch (e) {
+    return { error: true, e };
+  }
+};
 
 export const getUserSkills = async () => {
   try {
-    const response = await apiClient.get(`/user/skills`);
+    const response = await apiClient.get(`/user/skills/mySkills`);
     return { success: true, data: response.data.skills };
   } catch (e) {
     return { success: false, error: e };
@@ -164,6 +250,9 @@ export const updateUserSkill = async (userId, skillId, skillData) => {
 
 // Eliminar habilidad de un usuario
 export const deleteUserSkill = async (userId, skillId) => {
+  console.log('API deleteUserSkill - userId:', userId);
+  console.log('API deleteUserSkill - skillId:', skillId);
+  console.log('API deleteUserSkill - URL:', `/user/skills/${skillId}`);
   try {
     const response = await apiClient.delete(`/user/skills/${skillId}`);
     return { success: true, data: response.data.skill };
@@ -339,7 +428,7 @@ export const getEnterpriseByRecruiter = async (recruiterId) => {
 
 export const applyToOffer = async (data) => {
   try {
-    return await apiClient.post(`/wOffer/apply`, data);
+    return await apiClient.post(`/solicitudes`, data);
   } catch (error) {
     return {
       error: true,
@@ -383,11 +472,72 @@ export const updateEnterprise = async (id, data) => {
 
 export const createEnterprise = async (data) => {
   try {
-    return await apiClient.post(`/enterprise/`, data);
+    return await apiClient.post("/enterprise", data);
   } catch (error) {
     return {
       error: true,
       message: error?.response?.data?.msg || "Error inesperado",
     };
+  }
+};
+
+// ##### Messages #####
+
+// Enviar un nuevo mensaje
+export const sendMessage = async (messageData) => {
+  try {
+    const res = await apiClient.post("/messages/send", messageData);
+    return res.data;
+  } catch (e) {
+    console.error("Error sending message:", e);
+    throw e;
+  }
+};
+
+// Obtener todas las conversaciones del usuario
+export const getConversations = async () => {
+  try {
+    const res = await apiClient.get("/messages/conversations");
+    return res.data;
+  } catch (e) {
+    console.error("Error getting conversations:", e);
+    throw e;
+  }
+};
+
+// Obtener mensajes de una conversación específica
+export const getMessages = async (conversationId, page = 1, limit = 50) => {
+  try {
+    const res = await apiClient.get(`/messages/conversation/${conversationId}?page=${page}&limit=${limit}`);
+    return res.data;
+  } catch (e) {
+    console.error("Error getting messages:", e);
+    throw e;
+  }
+};
+
+// Marcar mensajes como leídos
+export const markMessagesAsRead = async (conversationId) => {
+  try {
+    const res = await apiClient.put(`/messages/conversation/${conversationId}/read`);
+    return res.data;
+  } catch (e) {
+    console.error("Error marking messages as read:", e);
+    throw e;
+  }
+};
+
+// Iniciar conversación con un candidato (solo para empresas)
+export const startConversationWithCandidate = async (candidateId, jobOfferId, initialMessage) => {
+  try {
+    const res = await apiClient.post("/messages/start-conversation", {
+      candidateId,
+      jobOfferId,
+      initialMessage
+    });
+    return res.data;
+  } catch (e) {
+    console.error("Error starting conversation:", e);
+    throw e;
   }
 };

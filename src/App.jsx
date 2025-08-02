@@ -7,18 +7,24 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import CandidatoPerfil from './pages/CandidatoPerfil'
 import AdminDashboard from './pages/AdminDashboard'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import { Toaster } from "sonner";
 import CompanyDashboard from './pages/CompanyDashboard'
 import ProtectedRoute from './components/ProtectedRoute'
 
-function App() {
-
+// Componente para manejar el header condicionalmente
+function AppContent() {
+  const location = useLocation();
+  
+  // Rutas donde se debe mostrar el header (rutas de candidatos)
+  const candidateRoutes = ['/', '/user-profile', '/applied-saved-jobs', '/mensajes'];
+  const showHeader = candidateRoutes.includes(location.pathname);
+  
   return (
-    <Router>
-      <Header />
+    <>
+      {showHeader && <Header />}
       <Routes>
         {/* Rutas públicas */}
         <Route path="/" element={<JobsPage />} />
@@ -61,7 +67,7 @@ function App() {
           } 
         />
         <Route 
-          path="/candidato-perfil" 
+          path="/candidato-perfil/:userId" 
           element={
             <ProtectedRoute allowedRoles={['RECRUITER']}>
               <CandidatoPerfil />
@@ -81,6 +87,14 @@ function App() {
       </Routes>
       <Footer />
       <Toaster />
+    </>
+  )
+}
+
+function App() {
+  return (
+    <Router>
+      <AppContent />
     </Router>
   )
 }
