@@ -24,7 +24,7 @@ function AppContent() {
   
   return (
     <>
-      {showHeader && <Header />}
+   <Header />
       <Routes>
         {/* Rutas públicas */}
         <Route path="/" element={<JobsPage />} />

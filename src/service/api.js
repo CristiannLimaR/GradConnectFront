@@ -472,11 +472,16 @@ export const updateEnterprise = async (id, data) => {
 
 export const createEnterprise = async (data) => {
   try {
-    return await apiClient.post("/enterprise", data);
+    const response = await apiClient.post("/enterprise/register", data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
   } catch (error) {
     return {
       error: true,
-      message: error?.response?.data?.msg || "Error inesperado",
+      message: error?.response?.data?.msg || error.message || "Error al crear la empresa",
     };
   }
 };
@@ -541,3 +546,4 @@ export const startConversationWithCandidate = async (candidateId, jobOfferId, in
     throw e;
   }
 };
+
