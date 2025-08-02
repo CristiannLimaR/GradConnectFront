@@ -7,15 +7,28 @@ import { useEnterprise } from '../shared/hooks/useEnterprise';
 import EnterpriseForm from './EnterpriseForm';
 
 export default function CompanyManagement() {
-  const { enterprise, getEnterprises, deleteEnterprise, saveEnterprise } = useEnterprise();
+  const { enterprise, getEnterprises, deleteEnterprise, saveEnterprise, updateEnterprise } = useEnterprise();
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-
+  const [selectedCompanyForEdit, setSelectedCompanyForEdit] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   const handleViewProfile = (company) => {
     setSelectedCompany(company);
     setIsModalOpen(true);
+  };
+
+  const handleEditCompany = (companyAdapted) => {
+    const originalCompany = enterprise?.enterprises?.find(
+      (c) => c.id === companyAdapted.id
+    );
+
+    if (originalCompany) {
+      setSelectedCompanyForEdit(originalCompany);
+      setIsEditing(true);
+      console.log("Editing company:", originalCompany);
+    }
   };
 
   useEffect(() => {
@@ -68,15 +81,27 @@ export default function CompanyManagement() {
           </button>
         </div>
       </div>
-      {isCreating && (
+      {(isCreating || isEditing) && (
         <div className="bg-white rounded-lg shadow p-6">
           <EnterpriseForm
-            title="Crear nueva empresa"
-            onCancel={() => setIsCreating(false)}
+            title={isEditing ? "Editar empresa" : "Crear nueva empresa"}
+            initialData={isEditing ? selectedCompanyForEdit : {}}
+            onCancel={() => {
+              setIsCreating(false);
+              setIsEditing(false);
+              setSelectedCompanyForEdit(null);
+            }}
             onSubmit={async (data) => {
-              await saveEnterprise(data);
+              if (isEditing && selectedCompanyForEdit) {
+                await updateEnterprise(selectedCompanyForEdit.id, data); // Llama al método correcto
+              } else {
+                await saveEnterprise(data); // Sigue creando si no estás editando
+              }
+
               await getEnterprises();
               setIsCreating(false);
+              setIsEditing(false);
+              setSelectedCompanyForEdit(null);
             }}
           />
         </div>
@@ -88,6 +113,7 @@ export default function CompanyManagement() {
           columns={companyColumns({
             deleteEnterprise,
             onViewProfile: handleViewProfile,
+            onEdit: handleEditCompany,
           })}
           searchKey={["name", "email", "adminUser.firstName"]}
           searchPlaceholder="Buscar empresas por nombre, descripción o sector..."
